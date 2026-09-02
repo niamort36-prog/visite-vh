@@ -1,4 +1,4 @@
-import type { IndexReseau, JeuDepartement } from '../types';
+import type { Aerodrome, IndexReseau, JeuDepartement } from '../types';
 
 const BASE = import.meta.env.BASE_URL;
 
@@ -57,4 +57,15 @@ export async function chargerCatalogue(): Promise<OuvrageRte[]> {
   if (!res.ok) throw new Error(`catalogue RTE indisponible (HTTP ${res.status})`);
   cacheCatalogue = (await res.json()) as OuvrageRte[];
   return cacheCatalogue;
+}
+
+let cacheAerodromes: Aerodrome[] | null = null;
+
+/** Référentiel des terrains français, chargé à la demande puis mis en cache. */
+export async function chargerAerodromes(): Promise<Aerodrome[]> {
+  if (cacheAerodromes) return cacheAerodromes;
+  const res = await fetch(`${BASE}data/aerodromes.json`);
+  if (!res.ok) throw new Error(`référentiel des aérodromes indisponible (HTTP ${res.status})`);
+  cacheAerodromes = (await res.json()) as Aerodrome[];
+  return cacheAerodromes;
 }

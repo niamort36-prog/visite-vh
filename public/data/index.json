@@ -1,7 +1,97 @@
 {
- "genereLe": "2026-09-02T17:51:12.071Z",
+ "genereLe": "2026-09-02T19:11:19.246Z",
  "version": 1,
  "departements": [
+  {
+   "code": "01",
+   "nom": "Ain",
+   "nbLignes": 163,
+   "nbPylones": 5658,
+   "nbPostes": 76,
+   "km": 2061.9,
+   "taille": 575411,
+   "bbox": [
+    45.58558,
+    4.68721,
+    47.32865,
+    6.16359
+   ]
+  },
+  {
+   "code": "03",
+   "nom": "Allier",
+   "nbLignes": 68,
+   "nbPylones": 3689,
+   "nbPostes": 42,
+   "km": 1244.2,
+   "taille": 367033,
+   "bbox": [
+    45.81468,
+    1.61964,
+    47.09685,
+    4.11056
+   ]
+  },
+  {
+   "code": "04",
+   "nom": "Alpes-de-Haute-Provence",
+   "nbLignes": 65,
+   "nbPylones": 2532,
+   "nbPostes": 29,
+   "km": 965.3,
+   "taille": 254913,
+   "bbox": [
+    43.46321,
+    5.37618,
+    44.65782,
+    7.07303
+   ]
+  },
+  {
+   "code": "05",
+   "nom": "Hautes-Alpes",
+   "nbLignes": 32,
+   "nbPylones": 1663,
+   "nbPostes": 24,
+   "km": 568.7,
+   "taille": 165820,
+   "bbox": [
+    44.21366,
+    5.63564,
+    45.1082,
+    6.80935
+   ]
+  },
+  {
+   "code": "06",
+   "nom": "Alpes-Maritimes",
+   "nbLignes": 69,
+   "nbPylones": 1919,
+   "nbPostes": 48,
+   "km": 736.1,
+   "taille": 199901,
+   "bbox": [
+    43.55359,
+    6.12466,
+    44.23675,
+    7.71554
+   ]
+  },
+  {
+   "code": "07",
+   "nom": "Ardèche",
+   "nbLignes": 67,
+   "nbPylones": 2704,
+   "nbPostes": 40,
+   "km": 972.6,
+   "taille": 273679,
+   "bbox": [
+    44.0231,
+    3.64194,
+    45.40536,
+    5.05168
+   ]
+  },
   {
    "code": "09",
    "nom": "Ariège",
@@ -9,7 +99,7 @@
    "nbPylones": 2419,
    "nbPostes": 40,
    "km": 689,
-   "taille": 244471,
+   "taille": 244487,
    "bbox": [
     42.52338,
     0.93759,
@@ -20,46 +110,226 @@
   {
    "code": "11",
    "nom": "Aude",
-   "nbLignes": 51,
-   "nbPylones": 2967,
-   "nbPostes": 31,
-   "km": 1006.1,
-   "taille": 292893,
+   "nbLignes": 57,
+   "nbPylones": 3228,
+   "nbPostes": 34,
+   "km": 1081.7,
+   "taille": 319549,
    "bbox": [
     42.60608,
-    1.83302,
-    44.03581,
+    1.66893,
+    44.03756,
     3.71766
    ]
   },
   {
    "code": "12",
    "nom": "Aveyron",
-   "nbLignes": 1,
-   "nbPylones": 176,
-   "nbPostes": 0,
-   "km": 89.9,
-   "taille": 16992,
+   "nbLignes": 90,
+   "nbPylones": 5918,
+   "nbPostes": 51,
+   "km": 2026.9,
+   "taille": 585431,
    "bbox": [
     43.24185,
-    2.66856,
-    44.03581,
-    2.82222
+    1.51127,
+    46.4584,
+    3.72355
    ]
   },
   {
    "code": "13",
    "nom": "Bouches-du-Rhône",
-   "nbLignes": 18,
-   "nbPylones": 416,
-   "nbPostes": 14,
-   "km": 166.1,
-   "taille": 44523,
+   "nbLignes": 208,
+   "nbPylones": 4535,
+   "nbPostes": 134,
+   "km": 1599.1,
+   "taille": 483955,
    "bbox": [
     43.18562,
-    5.34346,
-    43.46464,
+    4.39617,
+    44.00723,
     6.01691
+   ]
+  },
+  {
+   "code": "15",
+   "nom": "Cantal",
+   "nbLignes": 46,
+   "nbPylones": 3543,
+   "nbPostes": 29,
+   "km": 1244.4,
+   "taille": 353811,
+   "bbox": [
+    44.53976,
+    1.62051,
+    46.4584,
+    3.65124
+   ]
+  },
+  {
+   "code": "16",
+   "nom": "Charente",
+   "nbLignes": 57,
+   "nbPylones": 3106,
+   "nbPostes": 39,
+   "km": 1233.1,
+   "taille": 321887,
+   "bbox": [
+    45.03107,
+    -0.71858,
+    46.45795,
+    1.62291
+   ]
+  },
+  {
+   "code": "17",
+   "nom": "Charente-Maritime",
+   "nbLignes": 90,
+   "nbPylones": 3777,
+   "nbPostes": 51,
+   "km": 1493.5,
+   "taille": 394091,
+   "bbox": [
+    45.0168,
+    -1.4112,
+    46.657,
+    0.85815
+   ]
+  },
+  {
+   "code": "18",
+   "nom": "Cher",
+   "nbLignes": 47,
+   "nbPylones": 3823,
+   "nbPostes": 22,
+   "km": 1455.6,
+   "taille": 375472,
+   "bbox": [
+    45.24718,
+    1.59049,
+    47.79162,
+    3.29549
+   ]
+  },
+  {
+   "code": "19",
+   "nom": "Corrèze",
+   "nbLignes": 91,
+   "nbPylones": 5372,
+   "nbPostes": 45,
+   "km": 2002.3,
+   "taille": 534112,
+   "bbox": [
+    44.54026,
+    1.19034,
+    47.10179,
+    2.69109
+   ]
+  },
+  {
+   "code": "21",
+   "nom": "Côte-d'Or",
+   "nbLignes": 47,
+   "nbPylones": 2589,
+   "nbPostes": 27,
+   "km": 1021.5,
+   "taille": 261518,
+   "bbox": [
+    46.06264,
+    4.22236,
+    47.36101,
+    5.7955
+   ]
+  },
+  {
+   "code": "22",
+   "nom": "Côtes-d'Armor",
+   "nbLignes": 3,
+   "nbPylones": 148,
+   "nbPostes": 1,
+   "km": 57.4,
+   "taille": 16157,
+   "bbox": [
+    48.09432,
+    -3.55534,
+    48.30201,
+    -3.12832
+   ]
+  },
+  {
+   "code": "23",
+   "nom": "Creuse",
+   "nbLignes": 40,
+   "nbPylones": 3926,
+   "nbPostes": 19,
+   "km": 1441.4,
+   "taille": 383897,
+   "bbox": [
+    44.78147,
+    0.85909,
+    47.10179,
+    2.82616
+   ]
+  },
+  {
+   "code": "24",
+   "nom": "Dordogne",
+   "nbLignes": 54,
+   "nbPylones": 2619,
+   "nbPostes": 30,
+   "km": 1176.4,
+   "taille": 286205,
+   "bbox": [
+    44.05878,
+    -0.42907,
+    45.69905,
+    1.5736
+   ]
+  },
+  {
+   "code": "25",
+   "nom": "Doubs",
+   "nbLignes": 49,
+   "nbPylones": 2338,
+   "nbPostes": 21,
+   "km": 760.4,
+   "taille": 232940,
+   "bbox": [
+    46.0628,
+    5.54515,
+    47.38415,
+    7.05189
+   ]
+  },
+  {
+   "code": "26",
+   "nom": "Drôme",
+   "nbLignes": 130,
+   "nbPylones": 3369,
+   "nbPostes": 62,
+   "km": 1189.7,
+   "taille": 349793,
+   "bbox": [
+    44.01845,
+    4.37352,
+    45.6615,
+    5.48817
+   ]
+  },
+  {
+   "code": "29",
+   "nom": "Finistère",
+   "nbLignes": 48,
+   "nbPylones": 1763,
+   "nbPostes": 24,
+   "km": 776.5,
+   "taille": 193187,
+   "bbox": [
+    47.82548,
+    -4.42559,
+    48.43955,
+    -3.30294
    ]
   },
   {
@@ -69,7 +339,7 @@
    "nbPylones": 1030,
    "nbPostes": 15,
    "km": 474.7,
-   "taille": 103605,
+   "taille": 103225,
    "bbox": [
     41.37127,
     8.69018,
@@ -84,7 +354,7 @@
    "nbPylones": 1351,
    "nbPostes": 20,
    "km": 629.1,
-   "taille": 137588,
+   "taille": 137052,
    "bbox": [
     41.37127,
     8.70403,
@@ -93,122 +363,362 @@
    ]
   },
   {
+   "code": "30",
+   "nom": "Gard",
+   "nbLignes": 99,
+   "nbPylones": 3934,
+   "nbPostes": 50,
+   "km": 1325,
+   "taille": 397618,
+   "bbox": [
+    43.44318,
+    2.82719,
+    44.45624,
+    5.34007
+   ]
+  },
+  {
    "code": "31",
    "nom": "Haute-Garonne",
-   "nbLignes": 41,
-   "nbPylones": 2484,
-   "nbPostes": 32,
-   "km": 810.8,
-   "taille": 248190,
+   "nbLignes": 128,
+   "nbPylones": 6082,
+   "nbPostes": 93,
+   "km": 1646.2,
+   "taille": 614755,
    "bbox": [
     42.73247,
     -0.59146,
-    43.62283,
-    1.67788
+    43.98321,
+    2.26112
    ]
   },
   {
    "code": "32",
    "nom": "Gers",
-   "nbLignes": 1,
-   "nbPylones": 105,
-   "nbPostes": 0,
-   "km": 54.2,
-   "taille": 10137,
+   "nbLignes": 39,
+   "nbPylones": 2169,
+   "nbPostes": 21,
+   "km": 801.7,
+   "taille": 218259,
    "bbox": [
     43.17096,
-    0.50459,
-    43.54112,
-    0.9277
+    -0.42907,
+    45.06721,
+    1.2665
+   ]
+  },
+  {
+   "code": "33",
+   "nom": "Gironde",
+   "nbLignes": 157,
+   "nbPylones": 4484,
+   "nbPostes": 110,
+   "km": 2087,
+   "taille": 520490,
+   "bbox": [
+    44.01247,
+    -1.16949,
+    45.69927,
+    0.80983
    ]
   },
   {
    "code": "34",
    "nom": "Hérault",
-   "nbLignes": 7,
-   "nbPylones": 642,
-   "nbPostes": 2,
-   "km": 289.3,
-   "taille": 62071,
+   "nbLignes": 86,
+   "nbPylones": 4389,
+   "nbPostes": 63,
+   "km": 1338,
+   "taille": 440252,
    "bbox": [
     43.17762,
-    2.66856,
-    44.03581,
-    3.71766
+    2.56486,
+    44.13732,
+    4.63884
+   ]
+  },
+  {
+   "code": "36",
+   "nom": "Indre",
+   "nbLignes": 54,
+   "nbPylones": 5739,
+   "nbPostes": 29,
+   "km": 2075.6,
+   "taille": 564223,
+   "bbox": [
+    44.78147,
+    0.5771,
+    47.71236,
+    2.69069
    ]
   },
   {
    "code": "37",
    "nom": "Indre-et-Loire",
-   "nbLignes": 2,
-   "nbPylones": 336,
-   "nbPostes": 0,
-   "km": 135.1,
-   "taille": 32552,
+   "nbLignes": 29,
+   "nbPylones": 1890,
+   "nbPostes": 16,
+   "km": 694,
+   "taille": 186880,
    "bbox": [
-    47.20392,
-    -0.11206,
-    47.67477,
-    0.61748
+    46.76839,
+    -0.11385,
+    47.88059,
+    1.59049
+   ]
+  },
+  {
+   "code": "38",
+   "nom": "Isère",
+   "nbLignes": 226,
+   "nbPylones": 6352,
+   "nbPostes": 156,
+   "km": 2252.3,
+   "taille": 661566,
+   "bbox": [
+    44.57859,
+    4.66833,
+    46.06368,
+    6.21476
+   ]
+  },
+  {
+   "code": "39",
+   "nom": "Jura",
+   "nbLignes": 56,
+   "nbPylones": 3633,
+   "nbPostes": 34,
+   "km": 1327.6,
+   "taille": 362069,
+   "bbox": [
+    46.05593,
+    4.68913,
+    47.32865,
+    6.32262
    ]
   },
   {
    "code": "40",
    "nom": "Landes",
-   "nbLignes": 5,
-   "nbPylones": 478,
-   "nbPostes": 4,
-   "km": 190.6,
-   "taille": 47696,
+   "nbLignes": 67,
+   "nbPylones": 3296,
+   "nbPostes": 51,
+   "km": 1166.9,
+   "taille": 352920,
    "bbox": [
-    43.42176,
+    43.38606,
     -1.49501,
-    44.01263,
-    -0.88664
+    44.61337,
+    -0.02628
+   ]
+  },
+  {
+   "code": "41",
+   "nom": "Loir-et-Cher",
+   "nbLignes": 19,
+   "nbPylones": 1683,
+   "nbPostes": 3,
+   "km": 629,
+   "taille": 165506,
+   "bbox": [
+    46.45678,
+    0.77169,
+    47.79162,
+    2.25888
+   ]
+  },
+  {
+   "code": "42",
+   "nom": "Loire",
+   "nbLignes": 103,
+   "nbPylones": 2946,
+   "nbPostes": 57,
+   "km": 893.3,
+   "taille": 306115,
+   "bbox": [
+    45.24499,
+    3.29829,
+    46.28649,
+    4.78212
+   ]
+  },
+  {
+   "code": "43",
+   "nom": "Haute-Loire",
+   "nbLignes": 56,
+   "nbPylones": 2449,
+   "nbPostes": 51,
+   "km": 761.2,
+   "taille": 267215,
+   "bbox": [
+    44.62011,
+    3.06795,
+    45.55501,
+    4.3662
+   ]
+  },
+  {
+   "code": "44",
+   "nom": "Loire-Atlantique",
+   "nbLignes": 76,
+   "nbPylones": 2778,
+   "nbPostes": 40,
+   "km": 1013.7,
+   "taille": 288936,
+   "bbox": [
+    46.77654,
+    -3.29852,
+    47.87964,
+    -0.85739
+   ]
+  },
+  {
+   "code": "45",
+   "nom": "Loiret",
+   "nbLignes": 4,
+   "nbPylones": 697,
+   "nbPostes": 0,
+   "km": 338.5,
+   "taille": 67148,
+   "bbox": [
+    47.04025,
+    1.94571,
+    47.79162,
+    3.11624
+   ]
+  },
+  {
+   "code": "46",
+   "nom": "Lot",
+   "nbLignes": 32,
+   "nbPylones": 1432,
+   "nbPostes": 25,
+   "km": 498.6,
+   "taille": 143940,
+   "bbox": [
+    44.27161,
+    0.94612,
+    45.24492,
+    2.23041
+   ]
+  },
+  {
+   "code": "47",
+   "nom": "Lot-et-Garonne",
+   "nbLignes": 53,
+   "nbPylones": 2515,
+   "nbPostes": 28,
+   "km": 969.6,
+   "taille": 261812,
+   "bbox": [
+    43.95502,
+    -0.42907,
+    45.06721,
+    1.31763
+   ]
+  },
+  {
+   "code": "48",
+   "nom": "Lozère",
+   "nbLignes": 28,
+   "nbPylones": 2679,
+   "nbPostes": 16,
+   "km": 602.2,
+   "taille": 266162,
+   "bbox": [
+    44.32658,
+    2.71483,
+    45.03063,
+    4.23016
    ]
   },
   {
    "code": "49",
    "nom": "Maine-et-Loire",
-   "nbLignes": 11,
-   "nbPylones": 1076,
-   "nbPostes": 4,
-   "km": 389.3,
-   "taille": 106247,
+   "nbLignes": 58,
+   "nbPylones": 3930,
+   "nbPostes": 20,
+   "km": 1440.8,
+   "taille": 391700,
    "bbox": [
-    47.20392,
-    -0.47824,
-    47.70389,
+    46.75115,
+    -1.86872,
+    47.88059,
     0.61748
+   ]
+  },
+  {
+   "code": "56",
+   "nom": "Morbihan",
+   "nbLignes": 23,
+   "nbPylones": 1464,
+   "nbPostes": 10,
+   "km": 597.5,
+   "taille": 147683,
+   "bbox": [
+    47.29007,
+    -4.18974,
+    48.43955,
+    -1.86842
+   ]
+  },
+  {
+   "code": "58",
+   "nom": "Nièvre",
+   "nbLignes": 32,
+   "nbPylones": 1660,
+   "nbPostes": 13,
+   "km": 626,
+   "taille": 169206,
+   "bbox": [
+    46.27811,
+    2.55288,
+    47.69909,
+    3.94521
+   ]
+  },
+  {
+   "code": "63",
+   "nom": "Puy-de-Dôme",
+   "nbLignes": 72,
+   "nbPylones": 3591,
+   "nbPostes": 48,
+   "km": 1017.3,
+   "taille": 361539,
+   "bbox": [
+    44.97357,
+    2.5003,
+    46.31956,
+    3.76678
    ]
   },
   {
    "code": "64",
    "nom": "Pyrénées-Atlantiques",
-   "nbLignes": 56,
-   "nbPylones": 3142,
-   "nbPostes": 46,
-   "km": 1043.5,
-   "taille": 324721,
+   "nbLignes": 85,
+   "nbPylones": 4308,
+   "nbPostes": 69,
+   "km": 1405.6,
+   "taille": 453224,
    "bbox": [
     42.81704,
     -1.96378,
-    44.01263,
+    44.01374,
     0.5062
    ]
   },
   {
    "code": "65",
    "nom": "Hautes-Pyrénées",
-   "nbLignes": 75,
-   "nbPylones": 4779,
-   "nbPostes": 51,
-   "km": 1064.3,
-   "taille": 477149,
+   "nbLignes": 78,
+   "nbPylones": 4880,
+   "nbPostes": 53,
+   "km": 1091.8,
+   "taille": 487173,
    "bbox": [
     42.51624,
     -0.60513,
-    43.54112,
+    43.58956,
     0.9277
    ]
   },
@@ -228,48 +738,213 @@
    ]
   },
   {
+   "code": "69",
+   "nom": "Rhône",
+   "nbLignes": 121,
+   "nbPylones": 3317,
+   "nbPostes": 70,
+   "km": 1173.4,
+   "taille": 343419,
+   "bbox": [
+    45.09902,
+    4.12437,
+    46.58363,
+    5.6721
+   ]
+  },
+  {
+   "code": "70",
+   "nom": "Haute-Saône",
+   "nbLignes": 1,
+   "nbPylones": 88,
+   "nbPostes": 0,
+   "km": 16.5,
+   "taille": 8498,
+   "bbox": [
+    47.29523,
+    5.78594,
+    47.37816,
+    5.96129
+   ]
+  },
+  {
+   "code": "71",
+   "nom": "Saône-et-Loire",
+   "nbLignes": 106,
+   "nbPylones": 5320,
+   "nbPostes": 59,
+   "km": 1829.1,
+   "taille": 535125,
+   "bbox": [
+    45.8746,
+    3.73743,
+    47.32865,
+    5.7955
+   ]
+  },
+  {
    "code": "72",
    "nom": "Sarthe",
-   "nbLignes": 2,
-   "nbPylones": 265,
+   "nbLignes": 3,
+   "nbPylones": 427,
    "nbPostes": 0,
-   "km": 86.7,
-   "taille": 25889,
+   "km": 163.7,
+   "taille": 41405,
    "bbox": [
     47.20669,
     -0.11206,
-    47.70389,
-    0.20502
+    47.88059,
+    0.24838
+   ]
+  },
+  {
+   "code": "73",
+   "nom": "Savoie",
+   "nbLignes": 175,
+   "nbPylones": 4300,
+   "nbPostes": 111,
+   "km": 1477.9,
+   "taille": 452033,
+   "bbox": [
+    45.187,
+    5.12435,
+    46.05592,
+    7.43147
+   ]
+  },
+  {
+   "code": "74",
+   "nom": "Haute-Savoie",
+   "nbLignes": 94,
+   "nbPylones": 2716,
+   "nbPostes": 103,
+   "km": 939.2,
+   "taille": 287640,
+   "bbox": [
+    45.61945,
+    5.79978,
+    46.39593,
+    6.9504
+   ]
+  },
+  {
+   "code": "79",
+   "nom": "Deux-Sèvres",
+   "nbLignes": 53,
+   "nbPylones": 3246,
+   "nbPostes": 28,
+   "km": 1169.6,
+   "taille": 329745,
+   "bbox": [
+    45.67836,
+    -1.08817,
+    47.21008,
+    0.64198
    ]
   },
   {
    "code": "81",
    "nom": "Tarn",
-   "nbLignes": 1,
-   "nbPylones": 176,
-   "nbPostes": 0,
-   "km": 89.9,
-   "taille": 16989,
+   "nbLignes": 46,
+   "nbPylones": 2243,
+   "nbPostes": 31,
+   "km": 737.5,
+   "taille": 225498,
    "bbox": [
     43.24185,
-    2.66856,
-    44.03581,
-    2.82222
+    1.50107,
+    44.27355,
+    2.82684
+   ]
+  },
+  {
+   "code": "82",
+   "nom": "Tarn-et-Garonne",
+   "nbLignes": 58,
+   "nbPylones": 2730,
+   "nbPostes": 31,
+   "km": 982.6,
+   "taille": 274635,
+   "bbox": [
+    43.54112,
+    -0.42907,
+    45.06721,
+    2.2276
    ]
   },
   {
    "code": "83",
    "nom": "Var",
-   "nbLignes": 3,
-   "nbPylones": 205,
-   "nbPostes": 0,
-   "km": 100,
-   "taille": 19946,
+   "nbLignes": 67,
+   "nbPylones": 2346,
+   "nbPostes": 55,
+   "km": 928.4,
+   "taille": 240034,
    "bbox": [
-    43.1858,
+    43.11353,
     5.34346,
-    43.46464,
-    6.01691
+    43.81201,
+    7.19044
+   ]
+  },
+  {
+   "code": "84",
+   "nom": "Vaucluse",
+   "nbLignes": 98,
+   "nbPylones": 2349,
+   "nbPostes": 45,
+   "km": 791.3,
+   "taille": 245862,
+   "bbox": [
+    43.46321,
+    4.58089,
+    44.52092,
+    5.79577
+   ]
+  },
+  {
+   "code": "85",
+   "nom": "Vendée",
+   "nbLignes": 63,
+   "nbPylones": 2952,
+   "nbPostes": 39,
+   "km": 971.8,
+   "taille": 304464,
+   "bbox": [
+    46.176,
+    -2.23805,
+    47.18055,
+    -0.50387
+   ]
+  },
+  {
+   "code": "86",
+   "nom": "Vienne",
+   "nbLignes": 87,
+   "nbPylones": 3143,
+   "nbPostes": 51,
+   "km": 1126.1,
+   "taille": 326961,
+   "bbox": [
+    46.01503,
+    -0.50894,
+    47.21001,
+    1.61819
+   ]
+  },
+  {
+   "code": "87",
+   "nom": "Haute-Vienne",
+   "nbLignes": 66,
+   "nbPylones": 3510,
+   "nbPostes": 41,
+   "km": 1263.5,
+   "taille": 355022,
+   "bbox": [
+    44.78147,
+    -0.2449,
+    46.4584,
+    2.69069
    ]
   }
  ]

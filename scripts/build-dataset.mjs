@@ -442,6 +442,78 @@ function apparierLigne(odre, kv, nomA, nomB) {
 }
 
 /* ------------------------------------------------------------------ */
+/* 5 bis. Aérodromes                                                    */
+/* ------------------------------------------------------------------ */
+
+/** Découpe une ligne CSV en respectant les guillemets. */
+function champsCsv(l) {
+  const out = [];
+  let cur = '';
+  let q = false;
+  for (let i = 0; i < l.length; i++) {
+    const c = l[i];
+    if (c === '"') {
+      if (q && l[i + 1] === '"') {
+        cur += '"';
+        i++;
+      } else q = !q;
+    } else if (c === ',' && !q) {
+      out.push(cur);
+      cur = '';
+    } else cur += c;
+  }
+  out.push(cur);
+  return out;
+}
+
+/**
+ * Terrains français, hors aérodromes fermés. Ceux qui portent un code OACI sont
+ * ceux pour lesquels des NOTAM sont publiés ; les autres restent utiles à situer.
+ */
+function construireAerodromes() {
+  const f = path.join(RAW_DIR, '_airports.csv');
+  if (!fs.existsSync(f)) {
+    console.log('  ! référentiel des aérodromes absent — étape ignorée');
+    return [];
+  }
+  const lignes = fs.readFileSync(f, 'utf8').split(/\r?\n/);
+  const entete = champsCsv(lignes[0]).map((x) => x.replace(/"/g, ''));
+  const col = (nom) => entete.indexOf(nom);
+  const iPays = col('iso_country');
+  const iType = col('type');
+  const iNom = col('name');
+  const iLat = col('latitude_deg');
+  const iLon = col('longitude_deg');
+  const iIdent = col('ident');
+  const iOaci = col('icao_code');
+  const iVille = col('municipality');
+
+  const out = [];
+  for (let i = 1; i < lignes.length; i++) {
+    if (!lignes[i]) continue;
+    const c = champsCsv(lignes[i]);
+    if (c[iPays] !== 'FR') continue;
+    if (c[iType] === 'closed' || c[iType] === 'balloonport') continue;
+    const lat = Number(c[iLat]);
+    const lon = Number(c[iLon]);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+    const oaci = (c[iOaci] || '').trim() || (/^LF[A-Z]{2}$/.test(c[iIdent]) ? c[iIdent] : '');
+    out.push({
+      c: oaci,
+      n: c[iNom],
+      v: c[iVille] || '',
+      t: c[iType],
+      y: r5(lat),
+      x: r5(lon),
+    });
+  }
+  console.log(
+    `→ ${out.length} aérodromes français (${out.filter((a) => a.c).length} avec code OACI)`,
+  );
+  return out;
+}
+
+/* ------------------------------------------------------------------ */
 /* 6. Assemblage                                                       */
 /* ------------------------------------------------------------------ */
 
@@ -649,6 +721,9 @@ function main() {
     .sort((a, b) => a.n.localeCompare(b.n, 'fr'));
   fs.writeFileSync(path.join(OUT_DIR, 'ouvrages-rte.json'), JSON.stringify(catalogue));
   console.log(`  · catalogue RTE embarqué : ${catalogue.length} ouvrages`);
+
+  const aerodromes = construireAerodromes();
+  fs.writeFileSync(path.join(OUT_DIR, 'aerodromes.json'), JSON.stringify(aerodromes));
 
   // -- écriture par département --------------------------------------
   const parDept = new Map();

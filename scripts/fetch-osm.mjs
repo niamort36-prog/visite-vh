@@ -175,9 +175,27 @@ async function fetchDepartements() {
   console.log('  ✓ contours enregistrés');
 }
 
+/**
+ * Référentiel des aérodromes (OurAirports, domaine public) : sert à repérer les
+ * terrains concernés par un vol pour aller consulter les NOTAM correspondants.
+ */
+async function fetchAerodromes() {
+  const file = path.join(RAW_DIR, '_airports.csv');
+  if (!FORCE && fs.existsSync(file)) return;
+  console.log('→ Référentiel des aérodromes (OurAirports)…');
+  const res = await fetch('https://davidmegginson.github.io/ourairports-data/airports.csv');
+  if (!res.ok) {
+    console.log(`  ✗ échec (HTTP ${res.status}) — la liste des terrains sera vide`);
+    return;
+  }
+  fs.writeFileSync(file, await res.text());
+  console.log('  ✓ aérodromes enregistrés');
+}
+
 async function main() {
   fs.mkdirSync(RAW_DIR, { recursive: true });
   await fetchDepartements();
+  await fetchAerodromes();
 
   const zones = bboxArg
     ? [

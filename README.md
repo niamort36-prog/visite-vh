@@ -26,6 +26,10 @@ compte, et reste utilisable **hors connexion** une fois le secteur chargé.
   ouvrage y apparaît avec son domaine de tension, son kilométrage, un temps de visite
   calculé (50 km/h par défaut, modifiable) et un commentaire libre. Les lignes s'ajoutent
   **en les cliquant sur la carte** ou par recherche sur leur nom.
+- **NOTAM** : chaque journée de préparation porte un bouton *NOTAM* qui déduit des ouvrages
+  planifiés les **terrains à code OACI** situés dans un rayon réglable (10, 15 ou 25 km),
+  avec leur distance au tracé et les lignes concernées ; les codes se copient d'un clic et
+  le service officiel s'ouvre à côté. Voir la limite expliquée plus bas.
 - **Campagnes** : un suivi distinct par campagne (par exemple une par année).
 - **Sauvegarde** par export / import d'un fichier JSON, à conserver ou à partager.
 
@@ -38,6 +42,7 @@ compte, et reste utilisable **hors connexion** une fois le secteur chargé.
 | Contours départementaux | france-geojson | Rattachement des ouvrages aux départements. |
 | Fonds de carte | IGN Géoplateforme, OpenStreetMap | Gratuits, sans clé d'accès. |
 | Carte VFR et espaces aériens | [open flightmaps](https://www.openflightmaps.org/) | *OFMA General Users' License*, usage commercial inclus. Zoom natif 7 à 12, sur-zoom au-delà. |
+| Aérodromes et hélistations | [OurAirports](https://ourairports.com/) | Domaine public. 1 666 terrains français, dont 433 avec code OACI. |
 
 **Deux limites à connaître :**
 
@@ -49,6 +54,15 @@ compte, et reste utilisable **hors connexion** une fois le secteur chargé.
    permet alors de la renommer et de la **rattacher à un ouvrage du catalogue RTE officiel**
    embarqué (9 200 entrées). Ce rattachement est enregistré avec votre suivi et voyage avec
    l'export JSON.
+
+**Les NOTAM ne sont pas récupérés par l'application.** Aucun service ne les expose à une page
+web sans compte ni clé : l'API de la FAA et celle d'autorouter exigent une authentification et
+n'autorisent pas les requêtes depuis un navigateur tiers, l'ancien NOTAMWEB de la DGAC a été
+retiré, et SOFIA-Briefing qui l'a remplacé n'offre pas d'API publique. Une application statique
+sans serveur ne peut donc pas les afficher — et un NOTAM servi depuis un cache périmé serait
+pire qu'absent. L'application se limite à ce qu'elle peut garantir : dire **quels terrains
+consulter**, calculé sur la géométrie réelle des ouvrages planifiés, et ouvrir le service
+officiel avec les codes prêts à coller.
 
 Ces données sont indicatives et destinées à la préparation. Elles ne remplacent aucun
 document d'exploitation. **La carte VFR est fournie à titre non contractuel : elle ne
@@ -112,6 +126,7 @@ src/map/fonds.ts           définition des fonds de carte (IGN, OSM, VFR)
 src/map/MapView.tsx        carte Leaflet, tracés, pylônes, postes, position GPS
 src/lib/semaines.ts        calendrier ISO 8601 (semaines, jours, libellés)
 src/lib/vols.ts            types de vol, domaines de tension, temps de visite
+src/lib/notam.ts           terrains concernés par un vol (distance au tracé)
 src/ui/                    panneaux secteur, tableau des lignes, détail d'ouvrage,
                            préparations de vol et planning par demi-journée
 ```

@@ -5,6 +5,7 @@ import { couleur } from '../lib/tensions';
 import { domaine, dureeMinutes, libelleDuree, nomTypeVol, TYPES_VOL } from '../lib/vols';
 import { joursDeSemaine, libelleJour, libelleJourCourt, libelleSemaine } from '../lib/semaines';
 import { km as fmtKm } from '../lib/geo';
+import NotamJournee from './NotamJournee';
 
 const DEMIS: { cle: DemiJournee; nom: string }[] = [
   { cle: 'matin', nom: 'Matin' },
@@ -260,6 +261,7 @@ export default function PrepaDetail({
       {joursRetenus.map((jour) => (
         <div key={jour} className="journee">
           <div className="journee-titre">{libelleJour(jour)}</div>
+          <NotamJournee jour={jour} creneau={prepa.creneaux[jour]} />
 
           {DEMIS.map((d) => {
             const vols = prepa.creneaux[jour]?.[d.cle] ?? [];

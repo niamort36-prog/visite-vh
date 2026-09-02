@@ -1193,3 +1193,126 @@ td.duree small {
     display: none;
   }
 }
+
+/* ---------------------------------------------------------------- */
+/* NOTAM : terrains à vérifier                                       */
+/* ---------------------------------------------------------------- */
+
+/* Le bloc NOTAM occupe toute la largeur sous le titre du jour, pour ne pas
+   comprimer la date quand il est déplié. */
+.notam {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  padding: 6px 9px 0;
+}
+.notam-panneau {
+  align-self: stretch;
+}
+.bouton-notam {
+  border: 1px solid #b45309;
+  background: #fff7ed;
+  color: #b45309;
+  border-radius: 12px;
+  padding: 1px 9px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  cursor: pointer;
+}
+.bouton-notam:hover,
+.bouton-notam.actif {
+  background: #b45309;
+  color: #fff;
+}
+.bouton-notam .badge {
+  margin-left: 5px;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  padding: 0 5px;
+}
+.bouton-notam.actif .badge {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.notam-panneau {
+  margin: 6px 0 2px;
+  border: 1px solid #fed7aa;
+  border-left: 3px solid #b45309;
+  border-radius: var(--rayon);
+  background: #fffbf5;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--texte);
+}
+.notam-entete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+}
+.rayon {
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+}
+.rayon select {
+  width: auto;
+  padding: 2px 4px;
+}
+
+.terrains {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 240px;
+  overflow: auto;
+}
+.terrains li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 4px 8px;
+  align-items: baseline;
+  background: #fff;
+  border: 1px solid var(--bord);
+  border-radius: var(--rayon);
+  padding: 4px 8px;
+  font-size: 12px;
+}
+.terrain-nom small {
+  color: var(--texte-doux);
+}
+.terrain-distance {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: #b45309;
+}
+.terrain-lignes {
+  grid-column: 1 / -1;
+  font-size: 10px;
+  color: var(--texte-doux);
+}
+
+.bouton-lien {
+  padding: 6px 10px;
+  border: 1px solid var(--bord);
+  background: #fff;
+  border-radius: var(--rayon);
+  text-decoration: none;
+  color: inherit;
+  font-size: 12px;
+}
+.bouton-lien:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}

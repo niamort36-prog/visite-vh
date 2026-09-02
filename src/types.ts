@@ -195,3 +195,19 @@ export interface Preparation {
   note?: string;
   creeLe: string;
 }
+
+/** Terrain d'aviation, issu du référentiel OurAirports. */
+export interface Aerodrome {
+  /** code OACI, vide pour les terrains qui n'en ont pas */
+  c: string;
+  /** nom */
+  n: string;
+  /** commune */
+  v: string;
+  /** type OurAirports (large_airport, heliport…) */
+  t: string;
+  /** latitude */
+  y: number;
+  /** longitude */
+  x: number;
+}
