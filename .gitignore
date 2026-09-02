@@ -8,3 +8,4 @@ Thumbs.db
 # Données brutes OpenStreetMap : volumineuses et régénérables (npm run data:fetch)
 data/raw/
 data/fetch.log
+data/*.log
