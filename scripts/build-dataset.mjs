@@ -832,7 +832,10 @@ function main() {
     total += pylones.length;
     sansNumero += pylones.filter((p) => !p.numReel).length;
 
-    // départements traversés : échantillonnage des pylônes (1 sur 5 suffit)
+    // Départements traversés. Un pylône sur cinq suffit à les recenser ; si aucun
+    // ne tombe en France, on balaie tous les pylônes avant de conclure que
+    // l'ouvrage est étranger — une ligne frontalière peut n'y entrer que sur
+    // quelques portées.
     const setDepts = new Set();
     for (let i = 0; i < pylones.length; i += 5) {
       const d = departementDe(pylones[i].lat, pylones[i].lon, depts);
@@ -844,6 +847,12 @@ function main() {
       depts,
     );
     if (dFin) setDepts.add(dFin);
+    if (setDepts.size === 0) {
+      for (const p of pylones) {
+        const d = departementDe(p.lat, p.lon, depts);
+        if (d) setDepts.add(d);
+      }
+    }
 
     const cands = apparierLigne(odre, ch.kv, nomA, nomB);
     // Libellé à la manière RTE : extrémités en capitales, séparées par un tiret.
@@ -942,6 +951,19 @@ function main() {
   const aerodromes = construireAerodromes();
   fs.writeFileSync(path.join(OUT_DIR, 'aerodromes.json'), JSON.stringify(aerodromes));
 
+  // Les mailles Overpass débordent sur les pays voisins : les ouvrages qui ne
+  // tombent dans aucun département français sont écartés. On vérifie ici qu'il
+  // s'agit bien d'ouvrages étrangers et non d'un défaut de rattachement.
+  const orphelines = lignes.filter((l) => l.depts.length === 0);
+  if (orphelines.length) {
+    // aucun de leurs pylônes n'est en France : ce sont les réseaux limitrophes
+    // captés par les mailles Overpass, qui débordent sur les pays voisins
+    console.log(
+      `  · ${orphelines.length} lignes écartées : aucun pylône en territoire français ` +
+        '(réseaux limitrophes captés par la grille)',
+    );
+  }
+
   // -- écriture par département --------------------------------------
   const parDept = new Map();
   const ajouter = (code) => {
@@ -992,10 +1014,23 @@ function main() {
 
   fs.writeFileSync(path.join(OUT_DIR, 'index.json'), JSON.stringify(index, null, 1));
 
+  // décompte réel de ce qui est embarqué : les ouvrages étrangers sont écartés
+  const retenues = new Set();
+  let pylonesFr = 0;
+  for (const l of lignes)
+    if (l.depts.length && !retenues.has(l.id)) {
+      retenues.add(l.id);
+      pylonesFr += l.nbPylones;
+    }
+
   const poids = index.departements.reduce((a, d) => a + d.taille, 0);
   console.log(
     `\n✓ ${index.departements.length} départements écrits dans public/data ` +
-      `(${(poids / 1e6).toFixed(1)} Mo au total)`,
+      `(${(poids / 1e6).toFixed(1)} Mo au total)` +
+      `
+  ${retenues.size} ouvrages français, ` +
+      `${pylonesFr.toLocaleString('fr-FR')} pylônes, ` +
+      `${Math.round(index.departements.reduce((a, d) => a + d.km, 0)).toLocaleString('fr-FR')} km`,
   );
 }
 

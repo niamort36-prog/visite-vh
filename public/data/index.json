@@ -1,5 +1,5 @@
 {
- "genereLe": "2026-09-02T19:29:06.666Z",
+ "genereLe": "2026-09-02T23:08:12.056Z",
  "version": 1,
  "departements": [
   {
@@ -9,12 +9,27 @@
    "nbPylones": 5658,
    "nbPostes": 76,
    "km": 2061.9,
-   "taille": 607066,
+   "taille": 607155,
    "bbox": [
     45.58558,
     4.68721,
     47.32865,
     6.16359
+   ]
+  },
+  {
+   "code": "02",
+   "nom": "Aisne",
+   "nbLignes": 94,
+   "nbPylones": 3845,
+   "nbPostes": 41,
+   "km": 1336.5,
+   "taille": 400992,
+   "bbox": [
+    48.87162,
+    2.93585,
+    50.2954,
+    4.57133
    ]
   },
   {
@@ -93,6 +108,21 @@
    ]
   },
   {
+   "code": "08",
+   "nom": "Ardennes",
+   "nbLignes": 78,
+   "nbPylones": 2901,
+   "nbPostes": 47,
+   "km": 1005.8,
+   "taille": 299220,
+   "bbox": [
+    49.12254,
+    3.29421,
+    50.29241,
+    5.787
+   ]
+  },
+  {
    "code": "09",
    "nom": "Ariège",
    "nbLignes": 53,
@@ -105,6 +135,21 @@
     0.93759,
     43.52724,
     2.213
+   ]
+  },
+  {
+   "code": "10",
+   "nom": "Aube",
+   "nbLignes": 75,
+   "nbPylones": 4240,
+   "nbPostes": 30,
+   "km": 1731,
+   "taille": 430384,
+   "bbox": [
+    47.32778,
+    2.65322,
+    48.98383,
+    6.07214
    ]
   },
   {
@@ -150,6 +195,21 @@
     4.39617,
     44.00723,
     6.01691
+   ]
+  },
+  {
+   "code": "14",
+   "nom": "Calvados",
+   "nbLignes": 65,
+   "nbPylones": 2923,
+   "nbPostes": 37,
+   "km": 978.7,
+   "taille": 305583,
+   "bbox": [
+    48.72465,
+    -1.1854,
+    49.41403,
+    0.73079
    ]
   },
   {
@@ -200,11 +260,11 @@
   {
    "code": "18",
    "nom": "Cher",
-   "nbLignes": 51,
-   "nbPylones": 4098,
-   "nbPostes": 25,
-   "km": 1521.6,
-   "taille": 407456,
+   "nbLignes": 57,
+   "nbPylones": 4480,
+   "nbPostes": 28,
+   "km": 1640,
+   "taille": 445450,
    "bbox": [
     45.24718,
     1.59049,
@@ -230,31 +290,31 @@
   {
    "code": "21",
    "nom": "Côte-d'Or",
-   "nbLignes": 47,
-   "nbPylones": 2589,
-   "nbPostes": 27,
-   "km": 1021.5,
-   "taille": 270626,
+   "nbLignes": 98,
+   "nbPylones": 5258,
+   "nbPostes": 53,
+   "km": 2062.6,
+   "taille": 544403,
    "bbox": [
     46.06264,
-    4.22236,
-    47.36101,
+    3.74117,
+    48.51186,
     5.7955
    ]
   },
   {
    "code": "22",
    "nom": "Côtes-d'Armor",
-   "nbLignes": 17,
-   "nbPylones": 1089,
-   "nbPostes": 8,
-   "km": 400,
-   "taille": 113840,
+   "nbLignes": 94,
+   "nbPylones": 3592,
+   "nbPostes": 43,
+   "km": 1270.6,
+   "taille": 381843,
    "bbox": [
     47.97198,
-    -3.55534,
-    48.6156,
-    -1.55111
+    -3.86727,
+    48.78465,
+    -1.26196
    ]
   },
   {
@@ -290,16 +350,16 @@
   {
    "code": "25",
    "nom": "Doubs",
-   "nbLignes": 49,
-   "nbPylones": 2338,
-   "nbPostes": 21,
-   "km": 760.4,
-   "taille": 235878,
+   "nbLignes": 85,
+   "nbPylones": 3476,
+   "nbPostes": 41,
+   "km": 1125.2,
+   "taille": 356310,
    "bbox": [
     46.0628,
     5.54515,
-    47.38415,
-    7.05189
+    47.64874,
+    7.4713
    ]
   },
   {
@@ -318,33 +378,48 @@
    ]
   },
   {
+   "code": "27",
+   "nom": "Eure",
+   "nbLignes": 78,
+   "nbPylones": 3422,
+   "nbPostes": 46,
+   "km": 1272.8,
+   "taille": 362353,
+   "bbox": [
+    48.73111,
+    -0.25664,
+    49.65383,
+    1.83064
+   ]
+  },
+  {
    "code": "28",
    "nom": "Eure-et-Loir",
-   "nbLignes": 31,
-   "nbPylones": 1895,
-   "nbPostes": 5,
-   "km": 603.3,
-   "taille": 203476,
+   "nbLignes": 75,
+   "nbPylones": 3397,
+   "nbPostes": 37,
+   "km": 1146.9,
+   "taille": 362101,
    "bbox": [
     47.71334,
-    0.69646,
-    48.66657,
+    0.55771,
+    49.0284,
     2.37988
    ]
   },
   {
    "code": "29",
    "nom": "Finistère",
-   "nbLignes": 48,
-   "nbPylones": 1763,
-   "nbPostes": 24,
-   "km": 776.5,
-   "taille": 196026,
+   "nbLignes": 100,
+   "nbPylones": 2824,
+   "nbPostes": 62,
+   "km": 1341.7,
+   "taille": 332694,
    "bbox": [
     47.82548,
-    -4.42559,
-    48.43955,
-    -3.30294
+    -4.68635,
+    48.7121,
+    -3.19303
    ]
   },
   {
@@ -455,14 +530,14 @@
   {
    "code": "35",
    "nom": "Ille-et-Vilaine",
-   "nbLignes": 62,
-   "nbPylones": 3001,
-   "nbPostes": 37,
-   "km": 1097.2,
-   "taille": 313954,
+   "nbLignes": 83,
+   "nbPylones": 4006,
+   "nbPostes": 51,
+   "km": 1418.3,
+   "taille": 418991,
    "bbox": [
     47.35702,
-    -2.81929,
+    -2.87411,
     49.19871,
     -0.92123
    ]
@@ -519,7 +594,7 @@
    "nbPylones": 3633,
    "nbPostes": 34,
    "km": 1327.6,
-   "taille": 367228,
+   "taille": 367317,
    "bbox": [
     46.05593,
     4.68913,
@@ -545,11 +620,11 @@
   {
    "code": "41",
    "nom": "Loir-et-Cher",
-   "nbLignes": 64,
-   "nbPylones": 4009,
-   "nbPostes": 36,
-   "km": 1288,
-   "taille": 402942,
+   "nbLignes": 66,
+   "nbPylones": 4120,
+   "nbPostes": 37,
+   "km": 1312.5,
+   "taille": 413848,
    "bbox": [
     46.45678,
     0.54961,
@@ -592,9 +667,9 @@
    "nom": "Loire-Atlantique",
    "nbLignes": 120,
    "nbPylones": 5268,
-   "nbPostes": 68,
+   "nbPostes": 69,
    "km": 1862,
-   "taille": 562869,
+   "taille": 563039,
    "bbox": [
     46.77654,
     -3.29852,
@@ -605,16 +680,16 @@
   {
    "code": "45",
    "nom": "Loiret",
-   "nbLignes": 97,
-   "nbPylones": 4129,
-   "nbPostes": 53,
-   "km": 1418.8,
-   "taille": 435959,
+   "nbLignes": 110,
+   "nbPylones": 4914,
+   "nbPostes": 66,
+   "km": 1711.1,
+   "taille": 516077,
    "bbox": [
     47.04025,
     1.4463,
     48.54973,
-    3.11624
+    3.14557
    ]
   },
   {
@@ -680,31 +755,91 @@
   {
    "code": "50",
    "nom": "Manche",
-   "nbLignes": 2,
-   "nbPylones": 502,
-   "nbPostes": 0,
-   "km": 226.8,
-   "taille": 50426,
+   "nbLignes": 61,
+   "nbPylones": 3423,
+   "nbPostes": 36,
+   "km": 1232.4,
+   "taille": 352983,
    "bbox": [
     47.98955,
-    -1.54894,
-    49.19871,
-    -0.92123
+    -2.04186,
+    49.68189,
+    -0.27176
+   ]
+  },
+  {
+   "code": "51",
+   "nom": "Marne",
+   "nbLignes": 88,
+   "nbPylones": 3615,
+   "nbPostes": 49,
+   "km": 1404.5,
+   "taille": 381546,
+   "bbox": [
+    48.34459,
+    2.90777,
+    49.51324,
+    5.00184
+   ]
+  },
+  {
+   "code": "52",
+   "nom": "Haute-Marne",
+   "nbLignes": 40,
+   "nbPylones": 2918,
+   "nbPostes": 21,
+   "km": 974.9,
+   "taille": 294547,
+   "bbox": [
+    47.65304,
+    3.93116,
+    48.81793,
+    6.16357
    ]
   },
   {
    "code": "53",
    "nom": "Mayenne",
-   "nbLignes": 26,
-   "nbPylones": 1989,
-   "nbPostes": 16,
-   "km": 712.2,
-   "taille": 202306,
+   "nbLignes": 33,
+   "nbPylones": 2416,
+   "nbPostes": 23,
+   "km": 859.3,
+   "taille": 246158,
    "bbox": [
     47.50075,
     -1.54875,
     49.19871,
-    -0.15185
+    -0.03397
+   ]
+  },
+  {
+   "code": "54",
+   "nom": "Meurthe-et-Moselle",
+   "nbLignes": 130,
+   "nbPylones": 4576,
+   "nbPostes": 69,
+   "km": 1725,
+   "taille": 478961,
+   "bbox": [
+    48.27703,
+    3.93116,
+    49.82072,
+    7.41269
+   ]
+  },
+  {
+   "code": "55",
+   "nom": "Meuse",
+   "nbLignes": 60,
+   "nbPylones": 3610,
+   "nbPostes": 26,
+   "km": 1383.7,
+   "taille": 366517,
+   "bbox": [
+    48.34651,
+    3.93116,
+    49.82072,
+    6.13583
    ]
   },
   {
@@ -714,7 +849,7 @@
    "nbPylones": 3903,
    "nbPostes": 41,
    "km": 1461.5,
-   "taille": 408660,
+   "taille": 408722,
    "bbox": [
     47.28735,
     -4.18974,
@@ -723,33 +858,93 @@
    ]
   },
   {
+   "code": "57",
+   "nom": "Moselle",
+   "nbLignes": 184,
+   "nbPylones": 4609,
+   "nbPostes": 89,
+   "km": 1542,
+   "taille": 576562,
+   "bbox": [
+    48.57202,
+    5.77537,
+    49.50045,
+    7.60053
+   ]
+  },
+  {
    "code": "58",
    "nom": "Nièvre",
-   "nbLignes": 32,
-   "nbPylones": 1660,
-   "nbPostes": 13,
-   "km": 626,
-   "taille": 170066,
+   "nbLignes": 42,
+   "nbPylones": 2245,
+   "nbPostes": 18,
+   "km": 811.6,
+   "taille": 228144,
    "bbox": [
     46.27811,
     2.55288,
-    47.69909,
+    47.78734,
     3.94521
+   ]
+  },
+  {
+   "code": "59",
+   "nom": "Nord",
+   "nbLignes": 230,
+   "nbPylones": 5642,
+   "nbPostes": 133,
+   "km": 2013.7,
+   "taille": 655829,
+   "bbox": [
+    49.78839,
+    1.91269,
+    51.05133,
+    4.56158
+   ]
+  },
+  {
+   "code": "60",
+   "nom": "Oise",
+   "nbLignes": 99,
+   "nbPylones": 3699,
+   "nbPostes": 54,
+   "km": 1479.8,
+   "taille": 414254,
+   "bbox": [
+    48.90401,
+    1.02161,
+    50.17213,
+    3.32653
    ]
   },
   {
    "code": "61",
    "nom": "Orne",
-   "nbLignes": 4,
-   "nbPylones": 215,
-   "nbPostes": 2,
-   "km": 68.3,
-   "taille": 21371,
+   "nbLignes": 42,
+   "nbPylones": 2963,
+   "nbPostes": 16,
+   "km": 1016.9,
+   "taille": 294900,
    "bbox": [
     47.99149,
-    0.29146,
-    48.38649,
-    0.85817
+    -1.02303,
+    49.13816,
+    1.76932
+   ]
+  },
+  {
+   "code": "62",
+   "nom": "Pas-de-Calais",
+   "nbLignes": 137,
+   "nbPylones": 4722,
+   "nbPostes": 77,
+   "km": 1537.3,
+   "taille": 506557,
+   "bbox": [
+    49.66269,
+    1.6011,
+    50.9809,
+    3.22993
    ]
   },
   {
@@ -813,6 +1008,36 @@
    ]
   },
   {
+   "code": "67",
+   "nom": "Bas-Rhin",
+   "nbLignes": 133,
+   "nbPylones": 3822,
+   "nbPostes": 62,
+   "km": 1322.1,
+   "taille": 418822,
+   "bbox": [
+    47.90787,
+    6.11537,
+    49.01143,
+    8.1772
+   ]
+  },
+  {
+   "code": "68",
+   "nom": "Haut-Rhin",
+   "nbLignes": 95,
+   "nbPylones": 2686,
+   "nbPostes": 49,
+   "km": 923.7,
+   "taille": 306635,
+   "bbox": [
+    47.33769,
+    6.66478,
+    48.28785,
+    7.75403
+   ]
+  },
+  {
    "code": "69",
    "nom": "Rhône",
    "nbLignes": 121,
@@ -830,16 +1055,16 @@
   {
    "code": "70",
    "nom": "Haute-Saône",
-   "nbLignes": 1,
-   "nbPylones": 88,
-   "nbPostes": 0,
-   "km": 16.5,
-   "taille": 8524,
+   "nbLignes": 42,
+   "nbPylones": 2643,
+   "nbPostes": 20,
+   "km": 684.9,
+   "taille": 264481,
    "bbox": [
     47.29523,
-    5.78594,
-    47.37816,
-    5.96129
+    5.13471,
+    48.35381,
+    6.8522
    ]
   },
   {
@@ -849,7 +1074,7 @@
    "nbPylones": 5320,
    "nbPostes": 59,
    "km": 1829.1,
-   "taille": 559105,
+   "taille": 559289,
    "bbox": [
     45.8746,
     3.73743,
@@ -860,15 +1085,15 @@
   {
    "code": "72",
    "nom": "Sarthe",
-   "nbLignes": 65,
-   "nbPylones": 3232,
-   "nbPostes": 73,
-   "km": 1042,
-   "taille": 335569,
+   "nbLignes": 80,
+   "nbPylones": 3769,
+   "nbPostes": 77,
+   "km": 1191.7,
+   "taille": 389797,
    "bbox": [
     47.20669,
     -1.00442,
-    48.3346,
+    48.5047,
     1.05576
    ]
   },
@@ -903,18 +1128,63 @@
    ]
   },
   {
+   "code": "75",
+   "nom": "Paris",
+   "nbLignes": 0,
+   "nbPylones": 0,
+   "nbPostes": 52,
+   "km": 0,
+   "taille": 8549,
+   "bbox": [
+    90,
+    180,
+    -90,
+    -180
+   ]
+  },
+  {
+   "code": "76",
+   "nom": "Seine-Maritime",
+   "nbLignes": 125,
+   "nbPylones": 3725,
+   "nbPostes": 81,
+   "km": 1361,
+   "taille": 456880,
+   "bbox": [
+    49.21934,
+    0.11578,
+    50.06464,
+    2.25304
+   ]
+  },
+  {
    "code": "77",
    "nom": "Seine-et-Marne",
-   "nbLignes": 9,
-   "nbPylones": 291,
-   "nbPostes": 4,
-   "km": 131.8,
-   "taille": 33362,
+   "nbLignes": 183,
+   "nbPylones": 5139,
+   "nbPostes": 88,
+   "km": 1915.7,
+   "taille": 572122,
    "bbox": [
-    48.00306,
-    2.40377,
-    48.39063,
-    2.93463
+    47.79313,
+    2.33276,
+    49.36225,
+    3.91865
+   ]
+  },
+  {
+   "code": "78",
+   "nom": "Yvelines",
+   "nbLignes": 99,
+   "nbPylones": 2065,
+   "nbPostes": 53,
+   "km": 744.2,
+   "taille": 249336,
+   "bbox": [
+    48.59122,
+    0.55771,
+    49.20102,
+    2.20953
    ]
   },
   {
@@ -930,6 +1200,21 @@
     -1.08817,
     47.21008,
     0.64198
+   ]
+  },
+  {
+   "code": "80",
+   "nom": "Somme",
+   "nbLignes": 96,
+   "nbPylones": 4184,
+   "nbPostes": 43,
+   "km": 1465.5,
+   "taille": 461723,
+   "bbox": [
+    49.21999,
+    1.21801,
+    50.49369,
+    3.3035
    ]
   },
   {
@@ -1038,18 +1323,198 @@
    ]
   },
   {
+   "code": "88",
+   "nom": "Vosges",
+   "nbLignes": 63,
+   "nbPylones": 3115,
+   "nbPostes": 32,
+   "km": 1196.3,
+   "taille": 318305,
+   "bbox": [
+    47.87741,
+    3.93116,
+    48.86147,
+    7.41269
+   ]
+  },
+  {
+   "code": "89",
+   "nom": "Yonne",
+   "nbLignes": 76,
+   "nbPylones": 3342,
+   "nbPostes": 45,
+   "km": 1179.8,
+   "taille": 348236,
+   "bbox": [
+    47.32472,
+    2.70947,
+    48.39015,
+    4.68684
+   ]
+  },
+  {
+   "code": "90",
+   "nom": "Territoire de Belfort",
+   "nbLignes": 20,
+   "nbPylones": 1057,
+   "nbPostes": 7,
+   "km": 314,
+   "taille": 111927,
+   "bbox": [
+    47.34058,
+    6.62695,
+    47.77239,
+    7.47381
+   ]
+  },
+  {
    "code": "91",
    "nom": "Essonne",
-   "nbLignes": 5,
-   "nbPylones": 910,
-   "nbPostes": 0,
-   "km": 289.4,
-   "taille": 90873,
+   "nbLignes": 123,
+   "nbPylones": 3087,
+   "nbPostes": 56,
+   "km": 966,
+   "taille": 339291,
    "bbox": [
     48.09431,
-    1.85721,
-    48.66657,
-    2.38272
+    1.82918,
+    48.79888,
+    2.86717
+   ]
+  },
+  {
+   "code": "92",
+   "nom": "Hauts-de-Seine",
+   "nbLignes": 11,
+   "nbPylones": 211,
+   "nbPostes": 36,
+   "km": 55,
+   "taille": 35070,
+   "bbox": [
+    48.71605,
+    2.17179,
+    49.01018,
+    2.40843
+   ]
+  },
+  {
+   "code": "93",
+   "nom": "Seine-Saint-Denis",
+   "nbLignes": 23,
+   "nbPylones": 513,
+   "nbPostes": 26,
+   "km": 168.6,
+   "taille": 66005,
+   "bbox": [
+    48.86534,
+    2.26604,
+    49.03383,
+    2.66389
+   ]
+  },
+  {
+   "code": "94",
+   "nom": "Val-de-Marne",
+   "nbLignes": 20,
+   "nbPylones": 338,
+   "nbPostes": 38,
+   "km": 91.9,
+   "taille": 48041,
+   "bbox": [
+    48.71342,
+    2.26883,
+    48.79518,
+    2.64551
+   ]
+  },
+  {
+   "code": "95",
+   "nom": "Val-d'Oise",
+   "nbLignes": 104,
+   "nbPylones": 1988,
+   "nbPostes": 24,
+   "km": 677.1,
+   "taille": 233627,
+   "bbox": [
+    48.90667,
+    1.50934,
+    49.32617,
+    2.84701
+   ]
+  },
+  {
+   "code": "971",
+   "nom": "Guadeloupe",
+   "nbLignes": 13,
+   "nbPylones": 628,
+   "nbPostes": 12,
+   "km": 188.5,
+   "taille": 66025,
+   "bbox": [
+    15.98594,
+    -61.77919,
+    16.32278,
+    -61.27627
+   ]
+  },
+  {
+   "code": "972",
+   "nom": "Martinique",
+   "nbLignes": 13,
+   "nbPylones": 502,
+   "nbPostes": 13,
+   "km": 159.3,
+   "taille": 53726,
+   "bbox": [
+    14.47177,
+    -61.17002,
+    14.82464,
+    -60.84847
+   ]
+  },
+  {
+   "code": "973",
+   "nom": "Guyane",
+   "nbLignes": 13,
+   "nbPylones": 1034,
+   "nbPostes": 11,
+   "km": 425.9,
+   "taille": 104344,
+   "bbox": [
+    4.86428,
+    -53.96875,
+    5.5472,
+    -52.27313
+   ]
+  },
+  {
+   "code": "974",
+   "nom": "La Réunion",
+   "nbLignes": 43,
+   "nbPylones": 1250,
+   "nbPostes": 27,
+   "km": 351,
+   "taille": 133867,
+   "bbox": [
+    -21.35818,
+    55.28136,
+    -20.89662,
+    55.78709
+   ]
+  },
+  {
+   "code": "976",
+   "nom": "Mayotte",
+   "nbLignes": 2,
+   "nbPylones": 97,
+   "nbPostes": 1,
+   "km": 25.8,
+   "taille": 10088,
+   "bbox": [
+    -12.86821,
+    45.11638,
+    -12.73021,
+    45.22564
    ]
   }
  ]
