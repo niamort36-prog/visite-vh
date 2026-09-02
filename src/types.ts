@@ -142,6 +142,7 @@ export interface Sauvegarde {
   preparations?: Record<string, Preparation[]>;
   helicopteres?: Helicoptere[];
   contactsSeveso?: Record<string, ContactSeveso>;
+  aggloManuel?: Record<string, boolean>;
 }
 
 /* ------------------------------------------------------------------ */

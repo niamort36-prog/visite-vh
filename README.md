@@ -37,7 +37,10 @@ compte, et reste utilisable **hors connexion** une fois le secteur chargé.
 - **Agglomérations** : les ouvrages qui traversent une zone urbanisée apparaissent **sur fond
   vert** dans le tableau des lignes et dans le planning, pour rappeler qu'un **bi-turbine**
   est obligatoire pour ce survol. Une préparation en mono-turbine qui contient de tels
-  ouvrages affiche un avertissement.
+  ouvrages affiche un avertissement. La colonne **Agg.** du tableau **se coche et se
+  décoche** : on ajoute une agglomération que les données ont manquée, on retire celle qui
+  est de trop. Une valeur corrigée porte un liseré orange et se rétablit d'un clic depuis le
+  panneau *Ouvrage*. Ces corrections valent pour toutes les campagnes et suivent l'export.
 - **Campagnes** : un suivi distinct par campagne (par exemple une par année).
 - **Sauvegarde** par export / import d'un fichier JSON, à conserver ou à partager.
 
@@ -78,7 +81,7 @@ officiel avec les codes prêts à coller.
 urbain avec une unité minimale de 25 hectares : il retient les villes et les bourgs, mais
 ignore les hameaux, et son tracé ne coïncide pas exactement avec les zones jaunes de la carte
 OACI. Le fond vert est donc une alerte de préparation, à confirmer sur la carte OACI, pas une
-délimitation réglementaire.
+délimitation réglementaire — d'où la possibilité de la corriger ligne par ligne.
 
 Ces données sont indicatives et destinées à la préparation. Elles ne remplacent aucun
 document d'exploitation. **La carte VFR est fournie à titre non contractuel : elle ne

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { Ligne, StatutLigne } from '../types';
-import { calculerAvancement, codeAffiche, nomAffiche, useStore } from '../state/store';
+import { calculerAvancement, codeAffiche, etatAgglo, nomAffiche, useStore } from '../state/store';
 import { couleur, LIBELLE_STATUT, TENSIONS } from '../lib/tensions';
 import { dateCourte, km } from '../lib/geo';
 
@@ -12,7 +12,7 @@ interface Props {
 
 /** Tableau de bord du secteur : une ligne par ouvrage, avec kilométrage et avancement. */
 export default function LignesTable({ onOuvrir }: Props) {
-  const { lignes, suivi, ligneActive } = useStore();
+  const { lignes, suivi, ligneActive, aggloManuel, setAggloManuel } = useStore();
   const [recherche, setRecherche] = useState('');
   const [tensionsActives, setTensionsActives] = useState<number[]>([]);
   const [statutsActifs, setStatutsActifs] = useState<StatutLigne[]>([]);
@@ -29,7 +29,7 @@ export default function LignesTable({ onOuvrir }: Props) {
         const s = suivi(l.id);
         if (statutsActifs.length && !statutsActifs.includes(s.statut)) return false;
         if (aIdentifierSeules && !l.aIdentifier) return false;
-        if (aggloSeules && !l.agglo) return false;
+        if (aggloSeules && !etatAgglo(l, aggloManuel).actif) return false;
         if (sevesoSeules && !l.seveso?.length) return false;
         if (!r) return true;
         return (
@@ -70,6 +70,7 @@ export default function LignesTable({ onOuvrir }: Props) {
     aIdentifierSeules,
     aggloSeules,
     sevesoSeules,
+    aggloManuel,
   ]);
 
   const totaux = useMemo(() => {
@@ -162,7 +163,8 @@ export default function LignesTable({ onOuvrir }: Props) {
 
       <p className="legende">
         <span className="pastille-agglo" /> traverse une agglomération —{' '}
-        <b>bi-turbine obligatoire</b> pour le survol.
+        <b>bi-turbine obligatoire</b> pour le survol. La colonne <b>Agg.</b> se coche et se
+        décoche : la détection automatique n'est qu'une approximation.
       </p>
 
       <div className="synthese">
@@ -188,6 +190,12 @@ export default function LignesTable({ onOuvrir }: Props) {
           <thead>
             <tr>
               {entete('nom', 'Ligne')}
+              <th
+                className="col-agglo"
+                title="Traverse une agglomération : bi-turbine obligatoire. Cochez ou décochez pour corriger la détection."
+              >
+                Agg.
+              </th>
               {entete('tension', 'kV')}
               {entete('km', 'Long.', 'Longueur totale de la ligne')}
               {entete('perimetre', 'Périm.', 'Longueur entre les pylônes frontières')}
@@ -203,7 +211,7 @@ export default function LignesTable({ onOuvrir }: Props) {
                 key={l.id}
                 className={
                   (ligneActive === l.id ? 'active ' : '') +
-                  (l.agglo ? 'agglo ' : '') +
+                  (etatAgglo(l, aggloManuel).actif ? 'agglo ' : '') +
                   `statut-${s.statut}`
                 }
                 onClick={() => onOuvrir(l)}
@@ -222,6 +230,30 @@ export default function LignesTable({ onOuvrir }: Props) {
                     </span>
                   )}
                   {codeAffiche(l, s) && <code className="code-rte">{codeAffiche(l, s)}</code>}
+                </td>
+                <td className="col-agglo" onClick={(e) => e.stopPropagation()}>
+                  {(() => {
+                    const e = etatAgglo(l, aggloManuel);
+                    return (
+                      <input
+                        type="checkbox"
+                        className={e.manuel ? 'coche-agglo manuelle' : 'coche-agglo'}
+                        checked={e.actif}
+                        title={
+                          e.manuel
+                            ? `Corrigé à la main (les données indiquent ${
+                                e.auto ? 'une traversée' : 'aucune traversée'
+                              }). Décochez puis recochez pour revenir à la détection.`
+                            : l.agglo
+                              ? `Détecté : ${l.agglo.km.toFixed(1).replace('.', ',')} km en agglomération`
+                              : 'Aucune traversée détectée'
+                        }
+                        onChange={() =>
+                          setAggloManuel(l.id, !e.actif === e.auto ? null : !e.actif)
+                        }
+                      />
+                    );
+                  })()}
                 </td>
                 <td className="num">{l.tension}</td>
                 <td className="num">{l.km.toFixed(1).replace('.', ',')}</td>

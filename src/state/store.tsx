@@ -40,6 +40,12 @@ interface Persiste {
   helicopteres: Helicoptere[];
   /** coordonnées des sites Seveso, saisies par l'exploitant, par identifiant AIOT */
   contactsSeveso: Record<string, ContactSeveso>;
+  /**
+   * Corrections de la détection d'agglomération, par ouvrage : true pour en
+   * ajouter une que les données ont manquée, false pour en retirer une de trop.
+   * Hors campagne : la traversée est une caractéristique de la ligne.
+   */
+  aggloManuel: Record<string, boolean>;
 }
 
 function campagneParDefaut(): Campagne {
@@ -65,6 +71,7 @@ function lire(): Persiste {
           preparations: p.preparations ?? {},
           helicopteres: p.helicopteres ?? [],
           contactsSeveso: p.contactsSeveso ?? {},
+          aggloManuel: p.aggloManuel ?? {},
         };
     }
   } catch {
@@ -80,6 +87,7 @@ function lire(): Persiste {
     preparations: { [c.id]: [] },
     helicopteres: [],
     contactsSeveso: {},
+    aggloManuel: {},
   };
 }
 
@@ -142,6 +150,10 @@ interface Ctx {
 
   contactsSeveso: Record<string, ContactSeveso>;
   majContactSeveso: (id: string, patch: ContactSeveso) => void;
+
+  aggloManuel: Record<string, boolean>;
+  /** `null` rétablit la détection automatique. */
+  setAggloManuel: (ligneId: string, valeur: boolean | null) => void;
 
   exporter: () => void;
   importer: (fichier: File) => Promise<void>;
@@ -465,6 +477,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setEtat((s) => ({ ...s, helicopteres: s.helicopteres.filter((h) => h.id !== id) }));
   }, []);
 
+  const setAggloManuel = useCallback((ligneId: string, valeur: boolean | null) => {
+    setEtat((s) => {
+      const suite = { ...s.aggloManuel };
+      if (valeur === null) delete suite[ligneId];
+      else suite[ligneId] = valeur;
+      return { ...s, aggloManuel: suite };
+    });
+  }, []);
+
   const majContactSeveso = useCallback((id: string, patch: ContactSeveso) => {
     setEtat((s) => ({
       ...s,
@@ -483,6 +504,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       preparations: etat.preparations,
       helicopteres: etat.helicopteres,
       contactsSeveso: etat.contactsSeveso,
+      aggloManuel: etat.aggloManuel,
     };
     const blob = new Blob([JSON.stringify(sauvegarde, null, 1)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -509,6 +531,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         preparations: { ...cur.preparations, ...(s.preparations ?? {}) },
         helicopteres: fusionnerHelicos(cur.helicopteres, s.helicopteres ?? []),
         contactsSeveso: { ...cur.contactsSeveso, ...(s.contactsSeveso ?? {}) },
+        aggloManuel: { ...cur.aggloManuel, ...(s.aggloManuel ?? {}) },
         campagneCourante: s.campagnes[0]?.id ?? cur.campagneCourante,
       };
     });
@@ -548,6 +571,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     supprimerHelicoptere,
     contactsSeveso: etat.contactsSeveso,
     majContactSeveso,
+    aggloManuel: etat.aggloManuel,
+    setAggloManuel,
     exporter,
     importer,
   };
@@ -625,4 +650,21 @@ export function volDepuisLigne(l: Ligne, s: SuiviLigne): Omit<VolLigne, 'id'> {
     tension: l.tension,
     km: Math.round(km * 10) / 10,
   };
+}
+
+export interface EtatAgglo {
+  /** l'ouvrage est-il considéré comme traversant une agglomération ? */
+  actif: boolean;
+  /** la valeur vient-elle d'une correction manuelle ? */
+  manuel: boolean;
+  /** ce que disent les données */
+  auto: boolean;
+}
+
+/** Traversée d'agglomération retenue : la correction de l'exploitant prime. */
+export function etatAgglo(l: Ligne, manuels: Record<string, boolean>): EtatAgglo {
+  const auto = Boolean(l.agglo);
+  const forcee = manuels[l.id];
+  if (forcee === undefined) return { actif: auto, manuel: false, auto };
+  return { actif: forcee, manuel: true, auto };
 }

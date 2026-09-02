@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { DemiJournee, Ligne, Preparation, VolLigne } from '../types';
-import { nomAffiche, useStore, volDepuisLigne } from '../state/store';
+import { etatAgglo, nomAffiche, useStore, volDepuisLigne } from '../state/store';
 import { couleur } from '../lib/tensions';
 import { domaine, dureeMinutes, libelleDuree, nomTypeVol, TYPES_VOL } from '../lib/vols';
 import { joursDeSemaine, libelleJour, libelleJourCourt, libelleSemaine } from '../lib/semaines';
@@ -43,6 +43,7 @@ export default function PrepaDetail({
     helicopteres,
     ajouterHelicoptere,
     supprimerHelicoptere,
+    aggloManuel,
   } = useStore();
 
   const [gestionFlotte, setGestionFlotte] = useState(false);
@@ -103,10 +104,11 @@ export default function PrepaDetail({
     const ids = new Set<string>();
     for (const c of Object.values(prepa.creneaux))
       for (const v of [...c.matin, ...c.apresMidi]) {
-        if (parId.get(v.ligneId)?.agglo) ids.add(v.ligneId);
+        const ref = parId.get(v.ligneId);
+        if (ref && etatAgglo(ref, aggloManuel).actif) ids.add(v.ligneId);
       }
     return ids.size;
-  }, [prepa, parId]);
+  }, [prepa, parId, aggloManuel]);
 
   const basculerJour = (j: string) =>
     majPreparation(prepa.id, {
@@ -374,7 +376,12 @@ export default function PrepaDetail({
                         {vols.map((v, i) => {
                           const ref = parId.get(v.ligneId);
                           return (
-                          <tr key={v.id} className={ref?.agglo ? 'agglo' : undefined}>
+                          <tr
+                            key={v.id}
+                            className={
+                              ref && etatAgglo(ref, aggloManuel).actif ? 'agglo' : undefined
+                            }
+                          >
                             <td className="col-nom">
                               <span
                                 className="pastille-tension"

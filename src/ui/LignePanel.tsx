@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { Ligne, StatutLigne, SuiviLigne } from '../types';
-import { calculerAvancement, codeAffiche, nomAffiche, useStore } from '../state/store';
+import { calculerAvancement, codeAffiche, etatAgglo, nomAffiche, useStore } from '../state/store';
 import { couleur, LIBELLE_STATUT } from '../lib/tensions';
 import { aujourdhui, dateCourte, km } from '../lib/geo';
 import RattacherOuvrage from './RattacherOuvrage';
@@ -12,7 +12,15 @@ interface Props {
 }
 
 export default function LignePanel({ ligne, onCadrerPylone }: Props) {
-  const { suivi, majSuivi, observations, ajouterObservation, supprimerObservation } = useStore();
+  const {
+    suivi,
+    majSuivi,
+    observations,
+    ajouterObservation,
+    supprimerObservation,
+    aggloManuel,
+    setAggloManuel,
+  } = useStore();
   const s = suivi(ligne.id);
   const a = calculerAvancement(ligne, s);
   const [filtrePylone, setFiltrePylone] = useState('');
@@ -70,19 +78,43 @@ export default function LignePanel({ ligne, onCadrerPylone }: Props) {
 
       <RattacherOuvrage ligne={ligne} s={s} />
 
-      {(ligne.agglo || ligne.seveso?.length) && (
-        <>
-          <div className="bloc-titre">Contexte de survol</div>
-          {ligne.agglo && (
-            <p className="alerte-mono">
-              Traverse une agglomération sur <b>{ligne.agglo.km.toFixed(1).replace('.', ',')} km</b>
-              {ligne.agglo.n > 1 ? ` (${ligne.agglo.n} zones)` : ''} : le survol impose un appareil{' '}
-              <b>bi-turbine</b>.
+      <div className="bloc-titre">Contexte de survol</div>
+      {(() => {
+        const ea = etatAgglo(ligne, aggloManuel);
+        return (
+          <>
+            <label className="bascule-agglo">
+              <input
+                type="checkbox"
+                checked={ea.actif}
+                onChange={() => setAggloManuel(ligne.id, !ea.actif === ea.auto ? null : !ea.actif)}
+              />
+              <span>
+                Traverse une zone d'agglomération — <b>bi-turbine obligatoire</b>
+              </span>
+            </label>
+            <p className="aide">
+              {ligne.agglo
+                ? `Détection automatique : ${ligne.agglo.km
+                    .toFixed(1)
+                    .replace('.', ',')} km dans ${ligne.agglo.n} zone${
+                    ligne.agglo.n > 1 ? 's' : ''
+                  } urbanisée${ligne.agglo.n > 1 ? 's' : ''}.`
+                : 'Détection automatique : aucune traversée.'}
+              {ea.manuel && ' Valeur corrigée à la main.'}
+              {ea.manuel && (
+                <>
+                  {' '}
+                  <button className="lien" onClick={() => setAggloManuel(ligne.id, null)}>
+                    rétablir la détection
+                  </button>
+                </>
+              )}
             </p>
-          )}
-          {!!ligne.seveso?.length && <SevesoDetail sites={ligne.seveso} />}
-        </>
-      )}
+          </>
+        );
+      })()}
+      {!!ligne.seveso?.length && <SevesoDetail sites={ligne.seveso} />}
 
       <div className="bloc-titre">Statut</div>
       <div className="ligne-boutons">

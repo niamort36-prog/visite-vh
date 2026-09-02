@@ -1451,3 +1451,45 @@ tr.rangee-seveso td {
   padding: 7px 10px;
   font-size: 12px;
 }
+
+/* Correction manuelle de la traversée d'agglomération */
+.col-agglo {
+  width: 34px;
+  text-align: center;
+  padding-left: 2px !important;
+  padding-right: 2px !important;
+}
+th.col-agglo {
+  cursor: default;
+}
+.coche-agglo {
+  width: auto;
+  margin: 0;
+  cursor: pointer;
+  accent-color: #16a34a;
+}
+/* une valeur corrigée à la main se distingue de la détection automatique */
+.coche-agglo.manuelle {
+  outline: 2px solid #b45309;
+  outline-offset: 1px;
+  border-radius: 2px;
+}
+
+.bascule-agglo {
+  flex-direction: row;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--texte);
+  border: 1px solid #86efac;
+  border-left: 3px solid #16a34a;
+  background: #f0fdf4;
+  border-radius: var(--rayon);
+  padding: 7px 10px;
+  cursor: pointer;
+}
+.bascule-agglo input {
+  width: auto;
+  accent-color: #16a34a;
+}
