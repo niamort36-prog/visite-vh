@@ -41,6 +41,19 @@ compte, et reste utilisable **hors connexion** une fois le secteur chargé.
   décoche** : on ajoute une agglomération que les données ont manquée, on retire celle qui
   est de trop. Une valeur corrigée porte un liseré orange et se rétablit d'un clic depuis le
   panneau *Ouvrage*. Ces corrections valent pour toutes les campagnes et suivent l'export.
+- **Échéances** : une fenêtre récapitule les démarches à effectuer, avec leur date limite,
+  déduites du secteur et des préparations. Les retards apparaissent en rouge, les échéances
+  sous quinze jours en orange, et le bouton de l'en-tête porte le nombre de tâches ouvertes.
+  Chaque tâche se coche et accepte une note.
+
+  | Démarche | Échéance |
+  | --- | --- |
+  | Courrier à la gendarmerie de chaque département du secteur | début de campagne |
+  | Demandes au STH | 5 semaines avant le premier vol, **pour les vols en bi-turbine** |
+  | Demandes de survol des zones Seveso | 1 semaine avant, si des sites sont concernés |
+  | Consultation des activations AZBA et R368 (zone centre) | 1 semaine avant |
+  | Envoi de la préparation aux groupements de postes | 1 semaine avant |
+
 - **Campagnes** : un suivi distinct par campagne (par exemple une par année).
 - **Sauvegarde** par export / import d'un fichier JSON, à conserver ou à partager.
 
@@ -149,6 +162,7 @@ src/map/MapView.tsx        carte Leaflet, tracés, pylônes, postes, position GP
 src/lib/semaines.ts        calendrier ISO 8601 (semaines, jours, libellés)
 src/lib/vols.ts            types de vol, domaines de tension, temps de visite
 src/lib/notam.ts           terrains concernés par un vol (distance au tracé)
+src/lib/taches.ts          échéances de campagne déduites du secteur et des préparations
 src/ui/                    panneaux secteur, tableau des lignes, détail d'ouvrage,
                            préparations de vol et planning par demi-journée
 ```

@@ -12,6 +12,7 @@ import type {
   ContactSeveso,
   Creneau,
   DemiJournee,
+  EtatTache,
   Helicoptere,
   IndexReseau,
   Ligne,
@@ -46,6 +47,8 @@ interface Persiste {
    * Hors campagne : la traversée est une caractéristique de la ligne.
    */
   aggloManuel: Record<string, boolean>;
+  /** état des échéances, par campagne puis par identifiant de tâche */
+  taches: Record<string, Record<string, EtatTache>>;
 }
 
 function campagneParDefaut(): Campagne {
@@ -72,6 +75,7 @@ function lire(): Persiste {
           helicopteres: p.helicopteres ?? [],
           contactsSeveso: p.contactsSeveso ?? {},
           aggloManuel: p.aggloManuel ?? {},
+          taches: p.taches ?? {},
         };
     }
   } catch {
@@ -88,6 +92,7 @@ function lire(): Persiste {
     helicopteres: [],
     contactsSeveso: {},
     aggloManuel: {},
+    taches: { [c.id]: {} },
   };
 }
 
@@ -107,6 +112,7 @@ interface Ctx {
   setCampagneCourante: (id: string) => void;
   creerCampagne: (nom: string, annee: number) => void;
   supprimerCampagne: (id: string) => void;
+  majCampagne: (id: string, patch: Partial<Campagne>) => void;
 
   suivi: (ligneId: string) => SuiviLigne;
   majSuivi: (ligneId: string, patch: Partial<SuiviLigne>) => void;
@@ -154,6 +160,10 @@ interface Ctx {
   aggloManuel: Record<string, boolean>;
   /** `null` rétablit la détection automatique. */
   setAggloManuel: (ligneId: string, valeur: boolean | null) => void;
+
+  /** état des échéances de la campagne courante */
+  taches: Record<string, EtatTache>;
+  majTache: (tacheId: string, patch: Partial<EtatTache>) => void;
 
   exporter: () => void;
   importer: (fichier: File) => Promise<void>;
@@ -299,8 +309,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         suivis: { ...s.suivis, [c.id]: [] },
         observations: { ...s.observations, [c.id]: [] },
         preparations: { ...s.preparations, [c.id]: [] },
+        taches: { ...s.taches, [c.id]: {} },
       };
     });
+  }, []);
+
+  const majCampagne = useCallback((id: string, patch: Partial<Campagne>) => {
+    setEtat((s) => ({
+      ...s,
+      campagnes: s.campagnes.map((c) => (c.id === id ? { ...c, ...patch } : c)),
+    }));
   }, []);
 
   const supprimerCampagne = useCallback((id: string) => {
@@ -310,6 +328,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const { [id]: _a, ...suivis } = s.suivis;
       const { [id]: _b, ...observations } = s.observations;
       const { [id]: _c, ...preparations } = s.preparations;
+      const { [id]: _d, ...taches } = s.taches;
       return {
         ...s,
         campagnes,
@@ -317,6 +336,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         suivis,
         observations,
         preparations,
+        taches,
       };
     });
   }, []);
@@ -477,6 +497,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setEtat((s) => ({ ...s, helicopteres: s.helicopteres.filter((h) => h.id !== id) }));
   }, []);
 
+  const majTache = useCallback((tacheId: string, patch: Partial<EtatTache>) => {
+    setEtat((s) => {
+      const cid = s.campagneCourante;
+      const courant = s.taches[cid] ?? {};
+      const avant = courant[tacheId] ?? { fait: false };
+      return {
+        ...s,
+        taches: { ...s.taches, [cid]: { ...courant, [tacheId]: { ...avant, ...patch } } },
+      };
+    });
+  }, []);
+
   const setAggloManuel = useCallback((ligneId: string, valeur: boolean | null) => {
     setEtat((s) => {
       const suite = { ...s.aggloManuel };
@@ -505,6 +537,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       helicopteres: etat.helicopteres,
       contactsSeveso: etat.contactsSeveso,
       aggloManuel: etat.aggloManuel,
+      taches: etat.taches,
     };
     const blob = new Blob([JSON.stringify(sauvegarde, null, 1)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -532,6 +565,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         helicopteres: fusionnerHelicos(cur.helicopteres, s.helicopteres ?? []),
         contactsSeveso: { ...cur.contactsSeveso, ...(s.contactsSeveso ?? {}) },
         aggloManuel: { ...cur.aggloManuel, ...(s.aggloManuel ?? {}) },
+        taches: { ...cur.taches, ...(s.taches ?? {}) },
         campagneCourante: s.campagnes[0]?.id ?? cur.campagneCourante,
       };
     });
@@ -550,6 +584,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setCampagneCourante,
     creerCampagne,
     supprimerCampagne,
+    majCampagne,
     suivi,
     majSuivi,
     observations: obsCampagne,
@@ -573,6 +608,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     majContactSeveso,
     aggloManuel: etat.aggloManuel,
     setAggloManuel,
+    taches: etat.taches[etat.campagneCourante] ?? {},
+    majTache,
     exporter,
     importer,
   };

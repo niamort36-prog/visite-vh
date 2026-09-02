@@ -128,6 +128,8 @@ export interface Campagne {
   nom: string;
   annee: number;
   creeLe: string;
+  /** date de début de campagne, qui sert d'échéance aux démarches initiales */
+  debut?: string;
   /** départements chargés dans cette campagne */
   depts: string[];
 }
@@ -143,6 +145,7 @@ export interface Sauvegarde {
   helicopteres?: Helicoptere[];
   contactsSeveso?: Record<string, ContactSeveso>;
   aggloManuel?: Record<string, boolean>;
+  taches?: Record<string, Record<string, EtatTache>>;
 }
 
 /* ------------------------------------------------------------------ */
@@ -244,5 +247,13 @@ export interface SiteSeveso {
 export interface ContactSeveso {
   telephone?: string;
   courriel?: string;
+  note?: string;
+}
+
+/** État d'une échéance : les tâches elles-mêmes sont recalculées, pas stockées. */
+export interface EtatTache {
+  fait: boolean;
+  /** date de réalisation */
+  le?: string;
   note?: string;
 }

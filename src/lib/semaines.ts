@@ -69,3 +69,27 @@ export function libelleSemaine(annee: number, semaine: number): string {
     ? `du ${a.getUTCDate()} au ${b.getUTCDate()} ${moisB} ${b.getUTCFullYear()}`
     : `du ${a.getUTCDate()} ${moisA} au ${b.getUTCDate()} ${moisB} ${b.getUTCFullYear()}`;
 }
+
+/** Décale une date ISO (yyyy-mm-dd) de `n` jours. */
+export function ajouterJours(iso: string, n: number): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Nombre de jours entre aujourd'hui et une date ISO (négatif si passée). */
+export function joursAvant(iso: string): number {
+  const a = new Date(`${iso}T00:00:00Z`).getTime();
+  const n = new Date();
+  const b = Date.UTC(n.getFullYear(), n.getMonth(), n.getDate());
+  return Math.round((a - b) / 86400000);
+}
+
+/** « dans 12 jours », « aujourd'hui », « il y a 3 jours » */
+export function delaiLisible(iso: string): string {
+  const j = joursAvant(iso);
+  if (j === 0) return "aujourd'hui";
+  if (j === 1) return 'demain';
+  if (j === -1) return 'hier';
+  return j > 0 ? `dans ${j} jours` : `il y a ${-j} jours`;
+}

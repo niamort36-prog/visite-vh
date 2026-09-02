@@ -6,6 +6,9 @@ import LignePanel from './ui/LignePanel';
 import CampagneBarre from './ui/CampagneBarre';
 import PrepasPanel from './ui/PrepasPanel';
 import PrepaDetail from './ui/PrepaDetail';
+import TachesFenetre from './ui/TachesFenetre';
+import { genererTaches } from './lib/taches';
+import { joursAvant } from './lib/semaines';
 import { nomAffiche, useStore } from './state/store';
 import type { DemiJournee, Ligne, Pylone } from './types';
 import { volDepuisLigne } from './state/store';
@@ -32,6 +35,11 @@ export default function App() {
     ajouterObservation,
     preparations,
     ajouterVol,
+    campagnes,
+    campagneCourante,
+    index,
+    depts,
+    taches: etatsTaches,
   } = useStore();
   const [onglet, setOnglet] = useState<Onglet>('secteur');
   const [cible, setCible] = useState<CibleCarte | null>(null);
@@ -43,8 +51,23 @@ export default function App() {
     return Number.isFinite(v) && v >= 320 ? v : 430;
   });
   const [selection, setSelection] = useState<Selection | null>(null);
+  const [tachesOuvertes, setTachesOuvertes] = useState(false);
 
   const ligne = lignes.find((l) => l.id === ligneActive) ?? null;
+
+  // échéances ouvertes, pour la pastille de l'en-tête
+  const echeances = useMemo(() => {
+    const campagne = campagnes.find((c) => c.id === campagneCourante);
+    if (!campagne) return { ouvertes: 0, retard: 0 };
+    const entrees = (index?.departements ?? []).filter((d) => depts.includes(d.code));
+    const ouvertes = genererTaches(campagne, entrees, preparations, lignes).filter(
+      (t) => !etatsTaches[t.id]?.fait,
+    );
+    return {
+      ouvertes: ouvertes.length,
+      retard: ouvertes.filter((t) => joursAvant(t.echeance) < 0).length,
+    };
+  }, [campagnes, campagneCourante, index, depts, preparations, lignes, etatsTaches]);
 
   // poignée de redimensionnement du panneau : utile pour lire le planning en entier
   const commencerRedim = useCallback((e: React.PointerEvent) => {
@@ -111,6 +134,14 @@ export default function App() {
           </div>
         </div>
         <CampagneBarre />
+        <button
+          className={echeances.retard ? 'bouton-echeances retard' : 'bouton-echeances'}
+          onClick={() => setTachesOuvertes(true)}
+          title="Échéances de la campagne"
+        >
+          Échéances
+          {echeances.ouvertes > 0 && <span className="badge">{echeances.ouvertes}</span>}
+        </button>
         <button
           className="bascule-panneau"
           onClick={() => setPanneauOuvert((v) => !v)}
@@ -217,6 +248,8 @@ export default function App() {
           )}
         </main>
       </div>
+
+      {tachesOuvertes && <TachesFenetre onFermer={() => setTachesOuvertes(false)} />}
 
       {actionPylone && (
         <div className="feuille-action" role="dialog">

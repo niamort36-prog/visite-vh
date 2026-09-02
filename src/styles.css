@@ -1493,3 +1493,204 @@ th.col-agglo {
   width: auto;
   accent-color: #16a34a;
 }
+
+/* ---------------------------------------------------------------- */
+/* Échéances de campagne                                             */
+/* ---------------------------------------------------------------- */
+
+.bouton-echeances {
+  background: var(--marine-clair);
+  border: 1px solid #2f5480;
+  color: #cfe0f5;
+  border-radius: var(--rayon);
+  padding: 4px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.bouton-echeances:hover {
+  background: #1c4779;
+}
+.bouton-echeances.retard {
+  border-color: #f87171;
+  color: #fecaca;
+}
+.bouton-echeances .badge {
+  margin-left: 6px;
+  background: #ffd166;
+  color: #0b2545;
+  border-radius: 9px;
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.bouton-echeances.retard .badge {
+  background: #dc2626;
+  color: #fff;
+}
+
+.voile {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(11, 37, 69, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.fenetre {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 14px 44px rgba(11, 37, 69, 0.35);
+  width: min(760px, 100%);
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+}
+.fenetre-entete {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px 8px;
+  border-bottom: 1px solid var(--bord);
+}
+.fenetre-entete h2 {
+  margin: 0;
+  font-size: 16px;
+}
+.compte-retard {
+  color: #dc2626;
+  font-weight: 600;
+}
+.compte-proche {
+  color: #b45309;
+  font-weight: 600;
+}
+.fenetre-barre {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px 14px;
+  background: #f6f9fd;
+  border-bottom: 1px solid var(--bord);
+}
+.fenetre-barre input[type='date'] {
+  width: auto;
+}
+.fenetre-contenu {
+  flex: 1;
+  overflow: auto;
+  padding: 10px 14px;
+}
+.fenetre-pied {
+  padding: 8px 14px 12px;
+  border-top: 1px solid var(--bord);
+}
+
+.taches {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tache {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 9px;
+  align-items: start;
+  border: 1px solid var(--bord);
+  border-left: 3px solid var(--bord);
+  border-radius: var(--rayon);
+  padding: 7px 10px;
+  background: #fff;
+}
+.tache input[type='checkbox'] {
+  width: auto;
+  margin-top: 2px;
+  accent-color: #16a34a;
+}
+.tache.retard {
+  border-left-color: #dc2626;
+  background: #fff5f5;
+}
+.tache.proche {
+  border-left-color: #f59e0b;
+  background: #fffbeb;
+}
+.tache.venir {
+  border-left-color: #94a3b8;
+}
+.tache.faite {
+  border-left-color: #16a34a;
+  opacity: 0.6;
+}
+.tache.faite .tache-titre b {
+  text-decoration: line-through;
+}
+.tache-corps {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.tache-titre {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+.tache-ref {
+  font-size: 11px;
+  color: var(--texte-doux);
+  background: #eef2f7;
+  border-radius: 8px;
+  padding: 0 6px;
+}
+.tache-echeance {
+  font-size: 11px;
+  color: var(--texte-doux);
+}
+.tache.retard .tache-echeance {
+  color: #dc2626;
+  font-weight: 600;
+}
+.tache-note {
+  margin-top: 2px;
+  border: 1px dashed var(--bord);
+  font-size: 12px;
+}
+
+.etiquette {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  border-radius: 8px;
+  padding: 1px 7px;
+  white-space: nowrap;
+}
+.cat-gendarmerie {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+.cat-sth {
+  background: #cffafe;
+  color: #155e75;
+}
+.cat-seveso {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+.cat-azba {
+  background: #fef3c7;
+  color: #92400e;
+}
+.cat-groupement {
+  background: #dcfce7;
+  color: #166534;
+}
