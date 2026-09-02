@@ -19,6 +19,13 @@ compte, et reste utilisable **hors connexion** une fois le secteur chargé.
 - **Suivi de l'avancement** : le dernier pylône survolé fixe la progression ; les kilomètres
   et les dates se calculent seuls, et la portion réalisée apparaît en vert sur la carte.
 - **Observations** géolocalisées au pylône, avec niveau de gravité.
+- **Préparations de vol** : au sein d'une campagne, une préparation par semaine (S24…) et
+  par type de vol (VH mono-turbine, VH bi-turbines, VTIR, vol dédié LiDAR). On y renseigne
+  l'OAN, le pilote et l'appareil (choisi dans une flotte enregistrée une fois pour toutes),
+  on coche les jours travaillés, puis on compose un **planning par demi-journée** : chaque
+  ouvrage y apparaît avec son domaine de tension, son kilométrage, un temps de visite
+  calculé (50 km/h par défaut, modifiable) et un commentaire libre. Les lignes s'ajoutent
+  **en les cliquant sur la carte** ou par recherche sur leur nom.
 - **Campagnes** : un suivi distinct par campagne (par exemple une par année).
 - **Sauvegarde** par export / import d'un fichier JSON, à conserver ou à partager.
 
@@ -103,7 +110,10 @@ src/data/                  chargement des jeux de données
 src/state/store.tsx        campagnes, suivi, avancement, export / import
 src/map/fonds.ts           définition des fonds de carte (IGN, OSM, VFR)
 src/map/MapView.tsx        carte Leaflet, tracés, pylônes, postes, position GPS
-src/ui/                    panneaux secteur, tableau des lignes, détail d'ouvrage
+src/lib/semaines.ts        calendrier ISO 8601 (semaines, jours, libellés)
+src/lib/vols.ts            types de vol, domaines de tension, temps de visite
+src/ui/                    panneaux secteur, tableau des lignes, détail d'ouvrage,
+                           préparations de vol et planning par demi-journée
 ```
 
 ## Licences

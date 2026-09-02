@@ -40,15 +40,29 @@ interface Props {
   /** ligne à cadrer, pilotée depuis le tableau */
   cible: CibleCarte | null;
   onPyloneClic: (ligne: Ligne, pylone: Pylone) => void;
+  /** quand il est fourni, un clic sur une ligne l'ajoute à la préparation en cours */
+  onLigneSelection?: (ligne: Ligne) => void;
+  /** ouvrages déjà inscrits au planning de la préparation ouverte */
+  lignesPrepa?: Set<string>;
 }
 
-export default function MapView({ cible, onPyloneClic }: Props) {
+export default function MapView({
+  cible,
+  onPyloneClic,
+  onLigneSelection,
+  lignesPrepa,
+}: Props) {
   const { lignes, postes, suivi, ligneActive, setLigneActive, depts } = useStore();
   const conteneur = useRef<HTMLDivElement>(null);
   const carte = useRef<L.Map | null>(null);
   const coucheLignes = useRef<L.LayerGroup | null>(null);
   const couchePylones = useRef<L.LayerGroup | null>(null);
   const couchePostes = useRef<L.LayerGroup | null>(null);
+  const couchePrepa = useRef<L.LayerGroup | null>(null);
+  // gardé dans une référence : le tracé ne doit pas être redessiné à chaque
+  // changement de créneau de destination
+  const selectionCourante = useRef(onLigneSelection);
+  selectionCourante.current = onLigneSelection;
   const marqueurGps = useRef<L.CircleMarker | null>(null);
   const dernierSecteur = useRef<string>('');
   const [zoom, setZoom] = useState(8);
@@ -97,6 +111,7 @@ export default function MapView({ cible, onPyloneClic }: Props) {
     L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(m);
 
     coucheLignes.current = L.layerGroup().addTo(m);
+    couchePrepa.current = L.layerGroup().addTo(m);
     couchePylones.current = L.layerGroup().addTo(m);
     couchePostes.current = L.layerGroup().addTo(m);
 
@@ -108,7 +123,12 @@ export default function MapView({ cible, onPyloneClic }: Props) {
     maj();
     carte.current = m;
 
+    // le panneau latéral est redimensionnable : la carte doit suivre
+    const observateur = new ResizeObserver(() => m.invalidateSize());
+    observateur.observe(conteneur.current);
+
     return () => {
+      observateur.disconnect();
       m.remove();
       carte.current = null;
     };
@@ -136,7 +156,10 @@ export default function MapView({ cible, onPyloneClic }: Props) {
         opacity: s.statut === 'hors_perimetre' ? 0.3 : 0.9,
         dashArray: s.statut === 'hors_perimetre' ? '4 6' : undefined,
       });
-      trace.on('click', () => setLigneActive(l.id));
+      trace.on('click', () => {
+        setLigneActive(l.id);
+        selectionCourante.current?.(l);
+      });
       const code = codeAffiche(l, s);
       trace.bindTooltip(
         `<b>${nomAffiche(l, s)}</b><br>${l.tension} kV · ${l.km.toFixed(1).replace('.', ',')} km` +
@@ -161,6 +184,23 @@ export default function MapView({ cible, onPyloneClic }: Props) {
       }
     }
   }, [lignes, suivi, ligneActive, setLigneActive]);
+
+  /* ---- ouvrages inscrits à la préparation ouverte ------------------- */
+  useEffect(() => {
+    const g = couchePrepa.current;
+    if (!g) return;
+    g.clearLayers();
+    if (!lignesPrepa?.size) return;
+    for (const l of lignes) {
+      if (!lignesPrepa.has(l.id)) continue;
+      L.polyline(l.geom, {
+        color: '#7c3aed',
+        weight: epaisseur(l.tension) + 8,
+        opacity: 0.35,
+        lineCap: 'round',
+      }).addTo(g);
+    }
+  }, [lignes, lignesPrepa]);
 
   /* ---- postes ----------------------------------------------------- */
   useEffect(() => {

@@ -9,13 +9,20 @@ import React, {
 } from 'react';
 import type {
   Campagne,
+  Creneau,
+  DemiJournee,
+  Helicoptere,
   IndexReseau,
   Ligne,
   Observation,
   Poste,
+  Preparation,
   Sauvegarde,
   SuiviLigne,
+  TypeVol,
+  VolLigne,
 } from '../types';
+import { vitesseParDefaut } from '../lib/vols';
 import { chargerDept, chargerIndex } from '../data/reseau';
 
 const CLE = 'visite-vh:v1';
@@ -26,6 +33,10 @@ interface Persiste {
   depts: string[];
   suivis: Record<string, SuiviLigne[]>;
   observations: Record<string, Observation[]>;
+  /** préparations de vol, par campagne */
+  preparations: Record<string, Preparation[]>;
+  /** flotte connue, commune à toutes les campagnes */
+  helicopteres: Helicoptere[];
 }
 
 function campagneParDefaut(): Campagne {
@@ -44,7 +55,9 @@ function lire(): Persiste {
     const brut = localStorage.getItem(CLE);
     if (brut) {
       const p = JSON.parse(brut) as Persiste;
-      if (p.campagnes?.length) return p;
+      // champs ajoutés après coup : on complète les états enregistrés plus tôt
+      if (p.campagnes?.length)
+        return { ...p, preparations: p.preparations ?? {}, helicopteres: p.helicopteres ?? [] };
     }
   } catch {
     /* stockage indisponible ou corrompu : on repart d'un état vierge */
@@ -56,6 +69,8 @@ function lire(): Persiste {
     depts: [],
     suivis: { [c.id]: [] },
     observations: { [c.id]: [] },
+    preparations: { [c.id]: [] },
+    helicopteres: [],
   };
 }
 
@@ -85,8 +100,53 @@ interface Ctx {
   ligneActive: string | null;
   setLigneActive: (id: string | null) => void;
 
+  preparations: Preparation[];
+  creerPreparation: (annee: number, semaine: number, typeVol: TypeVol) => string;
+  majPreparation: (id: string, patch: Partial<Preparation>) => void;
+  supprimerPreparation: (id: string) => void;
+  dupliquerPreparation: (id: string) => void;
+  ajouterVol: (
+    prepaId: string,
+    jour: string,
+    demi: DemiJournee,
+    vol: Omit<VolLigne, 'id'>,
+  ) => void;
+  majVol: (
+    prepaId: string,
+    jour: string,
+    demi: DemiJournee,
+    volId: string,
+    patch: Partial<VolLigne>,
+  ) => void;
+  supprimerVol: (prepaId: string, jour: string, demi: DemiJournee, volId: string) => void;
+  deplacerVol: (
+    prepaId: string,
+    jour: string,
+    demi: DemiJournee,
+    volId: string,
+    sens: -1 | 1,
+  ) => void;
+
+  helicopteres: Helicoptere[];
+  ajouterHelicoptere: (h: Omit<Helicoptere, 'id'>) => void;
+  supprimerHelicoptere: (id: string) => void;
+
   exporter: () => void;
   importer: (fichier: File) => Promise<void>;
+}
+
+/** Fusionne deux flottes sans doublon d'immatriculation. */
+function fusionnerHelicos(a: Helicoptere[], b: Helicoptere[]): Helicoptere[] {
+  const parImmat = new Map(a.map((h) => [h.immatriculation, h]));
+  for (const h of b) if (!parImmat.has(h.immatriculation)) parImmat.set(h.immatriculation, h);
+  return [...parImmat.values()].sort((x, y) =>
+    x.immatriculation.localeCompare(y.immatriculation),
+  );
+}
+
+/** Créneau existant, ou créneau vide. */
+function creneauDe(p: Preparation, jour: string): Creneau {
+  return p.creneaux[jour] ?? { matin: [], apresMidi: [] };
 }
 
 const StoreContext = createContext<Ctx | null>(null);
@@ -214,6 +274,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         campagneCourante: c.id,
         suivis: { ...s.suivis, [c.id]: [] },
         observations: { ...s.observations, [c.id]: [] },
+        preparations: { ...s.preparations, [c.id]: [] },
       };
     });
   }, []);
@@ -224,14 +285,172 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const campagnes = s.campagnes.filter((c) => c.id !== id);
       const { [id]: _a, ...suivis } = s.suivis;
       const { [id]: _b, ...observations } = s.observations;
+      const { [id]: _c, ...preparations } = s.preparations;
       return {
         ...s,
         campagnes,
         campagneCourante: s.campagneCourante === id ? campagnes[0].id : s.campagneCourante,
         suivis,
         observations,
+        preparations,
       };
     });
+  }, []);
+
+  /* -- préparations de vol ------------------------------------------ */
+
+  const preparations = etat.preparations[etat.campagneCourante] ?? [];
+
+  const creerPreparation = useCallback(
+    (annee: number, semaine: number, typeVol: TypeVol): string => {
+      const id = `p${Date.now()}${Math.random().toString(36).slice(2, 5)}`;
+      setEtat((s) => {
+        const cid = s.campagneCourante;
+        const prepa: Preparation = {
+          id,
+          campagneId: cid,
+          annee,
+          semaine,
+          typeVol,
+          vitesse: vitesseParDefaut(typeVol),
+          jours: [],
+          creneaux: {},
+          creeLe: new Date().toISOString(),
+        };
+        return {
+          ...s,
+          preparations: { ...s.preparations, [cid]: [...(s.preparations[cid] ?? []), prepa] },
+        };
+      });
+      return id;
+    },
+    [],
+  );
+
+  /** Applique une transformation à une préparation de la campagne courante. */
+  const transformerPrepa = useCallback((id: string, f: (p: Preparation) => Preparation) => {
+    setEtat((s) => {
+      const cid = s.campagneCourante;
+      const liste = s.preparations[cid] ?? [];
+      return {
+        ...s,
+        preparations: { ...s.preparations, [cid]: liste.map((p) => (p.id === id ? f(p) : p)) },
+      };
+    });
+  }, []);
+
+  const majPreparation = useCallback(
+    (id: string, patch: Partial<Preparation>) => transformerPrepa(id, (p) => ({ ...p, ...patch })),
+    [transformerPrepa],
+  );
+
+  const supprimerPreparation = useCallback((id: string) => {
+    setEtat((s) => {
+      const cid = s.campagneCourante;
+      return {
+        ...s,
+        preparations: {
+          ...s.preparations,
+          [cid]: (s.preparations[cid] ?? []).filter((p) => p.id !== id),
+        },
+      };
+    });
+  }, []);
+
+  const dupliquerPreparation = useCallback((id: string) => {
+    setEtat((s) => {
+      const cid = s.campagneCourante;
+      const liste = s.preparations[cid] ?? [];
+      const src = liste.find((p) => p.id === id);
+      if (!src) return s;
+      const copie: Preparation = {
+        ...JSON.parse(JSON.stringify(src)),
+        id: `p${Date.now()}${Math.random().toString(36).slice(2, 5)}`,
+        creeLe: new Date().toISOString(),
+      };
+      return { ...s, preparations: { ...s.preparations, [cid]: [...liste, copie] } };
+    });
+  }, []);
+
+  const ajouterVol = useCallback(
+    (prepaId: string, jour: string, demi: DemiJournee, vol: Omit<VolLigne, 'id'>) =>
+      transformerPrepa(prepaId, (p) => {
+        const c = creneauDe(p, jour);
+        // un même ouvrage deux fois dans la même demi-journée : c'est un clic en trop
+        if (c[demi].some((v) => v.ligneId === vol.ligneId)) return p;
+        const nouveau: VolLigne = {
+          ...vol,
+          id: `v${Date.now()}${Math.random().toString(36).slice(2, 5)}`,
+        };
+        return {
+          ...p,
+          jours: p.jours.includes(jour) ? p.jours : [...p.jours, jour].sort(),
+          creneaux: { ...p.creneaux, [jour]: { ...c, [demi]: [...c[demi], nouveau] } },
+        };
+      }),
+    [transformerPrepa],
+  );
+
+  const majVol = useCallback(
+    (prepaId: string, jour: string, demi: DemiJournee, volId: string, patch: Partial<VolLigne>) =>
+      transformerPrepa(prepaId, (p) => {
+        const c = creneauDe(p, jour);
+        return {
+          ...p,
+          creneaux: {
+            ...p.creneaux,
+            [jour]: { ...c, [demi]: c[demi].map((v) => (v.id === volId ? { ...v, ...patch } : v)) },
+          },
+        };
+      }),
+    [transformerPrepa],
+  );
+
+  const supprimerVol = useCallback(
+    (prepaId: string, jour: string, demi: DemiJournee, volId: string) =>
+      transformerPrepa(prepaId, (p) => {
+        const c = creneauDe(p, jour);
+        return {
+          ...p,
+          creneaux: {
+            ...p.creneaux,
+            [jour]: { ...c, [demi]: c[demi].filter((v) => v.id !== volId) },
+          },
+        };
+      }),
+    [transformerPrepa],
+  );
+
+  const deplacerVol = useCallback(
+    (prepaId: string, jour: string, demi: DemiJournee, volId: string, sens: -1 | 1) =>
+      transformerPrepa(prepaId, (p) => {
+        const c = creneauDe(p, jour);
+        const liste = [...c[demi]];
+        const i = liste.findIndex((v) => v.id === volId);
+        const j = i + sens;
+        if (i < 0 || j < 0 || j >= liste.length) return p;
+        [liste[i], liste[j]] = [liste[j], liste[i]];
+        return { ...p, creneaux: { ...p.creneaux, [jour]: { ...c, [demi]: liste } } };
+      }),
+    [transformerPrepa],
+  );
+
+  const ajouterHelicoptere = useCallback((h: Omit<Helicoptere, 'id'>) => {
+    setEtat((s) => {
+      const immat = h.immatriculation.trim().toUpperCase();
+      if (!immat || s.helicopteres.some((x) => x.immatriculation === immat)) return s;
+      return {
+        ...s,
+        helicopteres: [
+          ...s.helicopteres,
+          { ...h, immatriculation: immat, id: `h${Date.now()}` },
+        ].sort((a, b) => a.immatriculation.localeCompare(b.immatriculation)),
+      };
+    });
+  }, []);
+
+  const supprimerHelicoptere = useCallback((id: string) => {
+    setEtat((s) => ({ ...s, helicopteres: s.helicopteres.filter((h) => h.id !== id) }));
   }, []);
 
   const exporter = useCallback(() => {
@@ -242,6 +461,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       campagnes: etat.campagnes,
       suivis: etat.suivis,
       observations: etat.observations,
+      preparations: etat.preparations,
+      helicopteres: etat.helicopteres,
     };
     const blob = new Blob([JSON.stringify(sauvegarde, null, 1)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -265,6 +486,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         campagnes: [...parId.values()],
         suivis: { ...cur.suivis, ...s.suivis },
         observations: { ...cur.observations, ...s.observations },
+        preparations: { ...cur.preparations, ...(s.preparations ?? {}) },
+        helicopteres: fusionnerHelicos(cur.helicopteres, s.helicopteres ?? []),
         campagneCourante: s.campagnes[0]?.id ?? cur.campagneCourante,
       };
     });
@@ -290,6 +513,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     supprimerObservation,
     ligneActive,
     setLigneActive,
+    preparations,
+    creerPreparation,
+    majPreparation,
+    supprimerPreparation,
+    dupliquerPreparation,
+    ajouterVol,
+    majVol,
+    supprimerVol,
+    deplacerVol,
+    helicopteres: etat.helicopteres,
+    ajouterHelicoptere,
+    supprimerHelicoptere,
     exporter,
     importer,
   };
@@ -351,4 +586,20 @@ export function nomAffiche(l: Ligne, s: SuiviLigne): string {
 /** Code d'ouvrage RTE retenu : rattachement manuel prioritaire sur l'appariement automatique. */
 export function codeAffiche(l: Ligne, s: SuiviLigne): string | undefined {
   return s.codeRtePerso || l.codeRte;
+}
+
+/**
+ * Prépare l'entrée de planning correspondant à un ouvrage : on retient le
+ * périmètre à visiter quand les pylônes frontières sont renseignés, sinon la
+ * longueur totale de la ligne.
+ */
+export function volDepuisLigne(l: Ligne, s: SuiviLigne): Omit<VolLigne, 'id'> {
+  const a = calculerAvancement(l, s);
+  const km = a.kmPerimetre > 0 ? a.kmPerimetre : l.km;
+  return {
+    ligneId: l.id,
+    nom: nomAffiche(l, s),
+    tension: l.tension,
+    km: Math.round(km * 10) / 10,
+  };
 }

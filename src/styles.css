@@ -941,3 +941,255 @@ button.principal:hover:not(:disabled) {
   color: var(--texte-doux);
   font-size: 10px;
 }
+
+/* ---------------------------------------------------------------- */
+/* Préparations de vol                                               */
+/* ---------------------------------------------------------------- */
+
+.grille3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.liste-prepas {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.carte-prepa {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--bord);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--rayon);
+  background: #fff;
+  padding: 7px 10px;
+  cursor: pointer;
+}
+.carte-prepa:hover {
+  background: #f6f9fd;
+}
+.carte-prepa-titre {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.carte-prepa-titre b {
+  font-size: 15px;
+  color: var(--marine);
+}
+.type-vol {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--texte-doux);
+}
+.carte-prepa-bilan {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--texte-doux);
+}
+.immat {
+  font-family: ui-monospace, Consolas, monospace;
+  background: #eef2f7;
+  border-radius: 3px;
+  padding: 0 5px;
+}
+
+.prepa-entete {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.prepa-titre {
+  margin: 4px 0 0;
+  font-size: 16px;
+}
+.aligne-gauche {
+  align-self: flex-start;
+}
+
+.flotte {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.flotte li {
+  position: relative;
+  border: 1px solid var(--bord);
+  border-radius: var(--rayon);
+  padding: 4px 24px 4px 8px;
+  background: #fff;
+  font-size: 12px;
+}
+
+.jours-semaine {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.jour {
+  border: 1px solid var(--bord);
+  background: #fff;
+  border-radius: var(--rayon);
+  padding: 4px 9px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--texte-doux);
+}
+.jour.actif {
+  background: var(--marine);
+  border-color: var(--marine);
+  color: #fff;
+}
+
+.journee {
+  border: 1px solid var(--bord);
+  border-radius: var(--rayon);
+  overflow: hidden;
+}
+.journee-titre {
+  background: #eef2f7;
+  padding: 5px 9px;
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--marine);
+}
+.creneau {
+  padding: 7px 9px;
+  border-top: 1px solid #eef1f6;
+}
+.creneau.actif {
+  background: #f5f0ff;
+  box-shadow: inset 3px 0 0 #7c3aed;
+}
+.creneau-entete {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 5px;
+}
+.creneau-entete .ligne-boutons {
+  margin-left: auto;
+}
+.creneau-entete button {
+  padding: 3px 8px;
+  font-size: 11px;
+}
+.creneau-total {
+  font-size: 11px;
+  color: var(--texte-doux);
+}
+
+.tableau-defilant.sans-hauteur {
+  min-height: 0;
+}
+.tableau.planning td {
+  vertical-align: middle;
+}
+.tableau.planning th:nth-child(3),
+.tableau.planning th:nth-child(4) {
+  text-align: right;
+}
+.cellule {
+  width: 100%;
+  min-width: 52px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: 2px 4px;
+  background: transparent;
+}
+.cellule:hover {
+  border-color: var(--bord);
+}
+.cellule:focus {
+  border-color: var(--accent);
+  background: #fff;
+  outline: none;
+}
+.cellule.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+td.duree small {
+  display: block;
+  color: var(--texte-doux);
+  font-size: 10px;
+  text-align: right;
+  padding-right: 4px;
+}
+.actions-vol {
+  white-space: nowrap;
+}
+.actions-vol button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--texte-doux);
+  padding: 0 2px;
+  font-size: 11px;
+}
+.actions-vol button:hover:not(:disabled) {
+  color: var(--accent);
+}
+.actions-vol button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.bandeau-selection {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #7c3aed;
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 18px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  font-size: 12px;
+  max-width: min(620px, 92%);
+}
+.bandeau-selection button {
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  background: transparent;
+  color: #fff;
+  border-radius: 12px;
+  padding: 2px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.bandeau-selection button:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* Poignée de redimensionnement du panneau latéral */
+.poignee {
+  flex: none;
+  width: 5px;
+  cursor: col-resize;
+  background: var(--bord);
+  transition: background 0.12s;
+}
+.poignee:hover {
+  background: var(--accent);
+}
+@media (max-width: 900px) {
+  .poignee {
+    display: none;
+  }
+}

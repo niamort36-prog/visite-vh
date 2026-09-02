@@ -1,24 +1,88 @@
-import { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import MapView, { type CibleCarte } from './map/MapView';
 import SecteurPanel from './ui/SecteurPanel';
 import LignesTable from './ui/LignesTable';
 import LignePanel from './ui/LignePanel';
 import CampagneBarre from './ui/CampagneBarre';
+import PrepasPanel from './ui/PrepasPanel';
+import PrepaDetail from './ui/PrepaDetail';
 import { nomAffiche, useStore } from './state/store';
-import type { Ligne, Pylone } from './types';
+import type { DemiJournee, Ligne, Pylone } from './types';
+import { volDepuisLigne } from './state/store';
 import { aujourdhui } from './lib/geo';
+import { libelleJour } from './lib/semaines';
 
-type Onglet = 'secteur' | 'lignes' | 'ligne';
+type Onglet = 'secteur' | 'lignes' | 'ligne' | 'prepa';
+
+/** Créneau alimenté par les clics sur la carte. */
+interface Selection {
+  prepaId: string;
+  jour: string;
+  demi: DemiJournee;
+}
 
 export default function App() {
-  const { lignes, ligneActive, setLigneActive, erreur, majSuivi, suivi, ajouterObservation } =
-    useStore();
+  const {
+    lignes,
+    ligneActive,
+    setLigneActive,
+    erreur,
+    majSuivi,
+    suivi,
+    ajouterObservation,
+    preparations,
+    ajouterVol,
+  } = useStore();
   const [onglet, setOnglet] = useState<Onglet>('secteur');
   const [cible, setCible] = useState<CibleCarte | null>(null);
   const [panneauOuvert, setPanneauOuvert] = useState(true);
   const [actionPylone, setActionPylone] = useState<{ ligne: Ligne; pylone: Pylone } | null>(null);
+  const [prepaOuverte, setPrepaOuverte] = useState<string | null>(null);
+  const [largeur, setLargeur] = useState(() => {
+    const v = Number(localStorage.getItem('visite-vh:largeur'));
+    return Number.isFinite(v) && v >= 320 ? v : 430;
+  });
+  const [selection, setSelection] = useState<Selection | null>(null);
 
   const ligne = lignes.find((l) => l.id === ligneActive) ?? null;
+
+  // poignée de redimensionnement du panneau : utile pour lire le planning en entier
+  const commencerRedim = useCallback((e: React.PointerEvent) => {
+    e.preventDefault();
+    const deplacer = (ev: PointerEvent) => {
+      const l = Math.min(Math.max(ev.clientX, 320), window.innerWidth - 280);
+      setLargeur(l);
+    };
+    const relacher = () => {
+      window.removeEventListener('pointermove', deplacer);
+      window.removeEventListener('pointerup', relacher);
+      setLargeur((l) => {
+        localStorage.setItem('visite-vh:largeur', String(l));
+        return l;
+      });
+    };
+    window.addEventListener('pointermove', deplacer);
+    window.addEventListener('pointerup', relacher);
+  }, []);
+  const prepa = preparations.find((p) => p.id === prepaOuverte) ?? null;
+
+  // ouvrages déjà planifiés dans la préparation ouverte, surlignés sur la carte
+  const lignesPrepa = useMemo(() => {
+    const s = new Set<string>();
+    if (!prepa) return s;
+    for (const c of Object.values(prepa.creneaux))
+      for (const v of [...c.matin, ...c.apresMidi]) s.add(v.ligneId);
+    return s;
+  }, [prepa]);
+
+  // en mode sélection, un clic sur une ligne l'ajoute au créneau visé
+  const selectionCarte = useCallback(
+    (l: Ligne) => {
+      if (!selection) return;
+      ajouterVol(selection.prepaId, selection.jour, selection.demi, volDepuisLigne(l, suivi(l.id)));
+    },
+    [selection, ajouterVol, suivi],
+  );
 
   // Ouvrir un ouvrage depuis le tableau le sélectionne, l'affiche en détail et le cadre.
   const ouvrirLigne = useCallback(
@@ -59,7 +123,7 @@ export default function App() {
       {erreur && <div className="bandeau-erreur">{erreur}</div>}
 
       <div className="corps">
-        <aside className="panneau-lateral">
+        <aside className="panneau-lateral" style={{ width: panneauOuvert ? largeur : 0 }}>
           <nav className="onglets">
             <button className={onglet === 'secteur' ? 'actif' : ''} onClick={() => setOnglet('secteur')}>
               Secteur
@@ -73,6 +137,9 @@ export default function App() {
               disabled={!ligne}
             >
               Ouvrage
+            </button>
+            <button className={onglet === 'prepa' ? 'actif' : ''} onClick={() => setOnglet('prepa')}>
+              Vols
             </button>
           </nav>
 
@@ -90,11 +157,64 @@ export default function App() {
               ) : (
                 <div className="vide">Sélectionnez une ligne dans le tableau ou sur la carte.</div>
               ))}
+            {onglet === 'prepa' &&
+              (prepa ? (
+                <PrepaDetail
+                  prepa={prepa}
+                  onRetour={() => {
+                    setPrepaOuverte(null);
+                    setSelection(null);
+                  }}
+                  creneauActif={
+                    selection && selection.prepaId === prepa.id
+                      ? { jour: selection.jour, demi: selection.demi }
+                      : null
+                  }
+                  onSelectionCarte={(jour, demi) =>
+                    setSelection((s) =>
+                      s && s.prepaId === prepa.id && s.jour === jour && s.demi === demi
+                        ? null
+                        : { prepaId: prepa.id, jour, demi },
+                    )
+                  }
+                  onCadrerLigne={(id) => setCible({ ligneId: id })}
+                />
+              ) : (
+                <PrepasPanel
+                  onOuvrir={(id) => {
+                    setPrepaOuverte(id);
+                    setSelection(null);
+                  }}
+                />
+              ))}
           </div>
         </aside>
 
+        {panneauOuvert && (
+          <div
+            className="poignee"
+            onPointerDown={commencerRedim}
+            title="Glisser pour élargir le panneau"
+          />
+        )}
+
         <main className="zone-carte">
-          <MapView cible={cible} onPyloneClic={onPyloneClic} />
+          <MapView
+            cible={cible}
+            onPyloneClic={onPyloneClic}
+            onLigneSelection={selection ? selectionCarte : undefined}
+            lignesPrepa={lignesPrepa}
+          />
+          {selection && prepa && (
+            <div className="bandeau-selection">
+              <span>
+                Ajout à <b>{libelleJour(selection.jour)}</b>,{' '}
+                {selection.demi === 'matin' ? 'matin' : 'après-midi'} — cliquez les lignes sur la
+                carte.
+              </span>
+              <button onClick={() => setSelection(null)}>Terminer</button>
+            </div>
+          )}
         </main>
       </div>
 

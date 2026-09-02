@@ -135,4 +135,63 @@ export interface Sauvegarde {
   campagnes: Campagne[];
   suivis: Record<string, SuiviLigne[]>;
   observations: Record<string, Observation[]>;
+  preparations?: Record<string, Preparation[]>;
+  helicopteres?: Helicoptere[];
+}
+
+/* ------------------------------------------------------------------ */
+/* Préparations de vol                                                  */
+/* ------------------------------------------------------------------ */
+
+export type TypeVol = 'VH_MONO' | 'VH_BI' | 'VTIR' | 'LIDAR';
+
+/** Appareil enregistré une fois, puis proposé dans les préparations. */
+export interface Helicoptere {
+  id: string;
+  immatriculation: string;
+  modele?: string;
+  exploitant?: string;
+  /** mono ou bi-turbine, pour filtrer les appareils selon le type de vol */
+  turbines?: 1 | 2;
+}
+
+/** Une ligne du planning : un ouvrage à survoler dans une demi-journée. */
+export interface VolLigne {
+  id: string;
+  ligneId: string;
+  /** libellé, tension et kilométrage figés à l'ajout, pour rester lisibles
+   *  même si le département n'est pas chargé au moment de la relecture */
+  nom: string;
+  tension: number;
+  km: number;
+  /** durée saisie à la main ; sinon elle découle des km et de la vitesse */
+  dureeMin?: number;
+  commentaire?: string;
+}
+
+export type DemiJournee = 'matin' | 'apresMidi';
+
+export interface Creneau {
+  matin: VolLigne[];
+  apresMidi: VolLigne[];
+}
+
+export interface Preparation {
+  id: string;
+  campagneId: string;
+  annee: number;
+  /** numéro de semaine ISO */
+  semaine: number;
+  typeVol: TypeVol;
+  /** vitesse moyenne de progression retenue, en km/h */
+  vitesse: number;
+  oan?: string;
+  pilote?: string;
+  immatriculation?: string;
+  /** dates ISO retenues dans la semaine */
+  jours: string[];
+  /** planning par date, puis par demi-journée */
+  creneaux: Record<string, Creneau>;
+  note?: string;
+  creeLe: string;
 }
