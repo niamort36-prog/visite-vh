@@ -1694,3 +1694,14 @@ th.col-agglo {
   background: #dcfce7;
   color: #166534;
 }
+
+/* Compteur d'échéances encore ouvertes dans une préparation */
+.compteur.en-cours {
+  background: #fef3c7;
+  color: #92400e;
+  font-weight: 700;
+}
+/* Dans le panneau latéral, les échéances restent compactes */
+.panneau .taches .tache {
+  padding: 6px 8px;
+}

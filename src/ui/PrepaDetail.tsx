@@ -7,6 +7,8 @@ import { joursDeSemaine, libelleJour, libelleJourCourt, libelleSemaine } from '.
 import { km as fmtKm } from '../lib/geo';
 import NotamJournee from './NotamJournee';
 import { SevesoBadge, SevesoDetail } from './SevesoCellule';
+import ListeTaches from './ListeTaches';
+import { useTaches } from '../state/useTaches';
 
 const DEMIS: { cle: DemiJournee; nom: string }[] = [
   { cle: 'matin', nom: 'Matin' },
@@ -44,7 +46,16 @@ export default function PrepaDetail({
     ajouterHelicoptere,
     supprimerHelicoptere,
     aggloManuel,
+    taches: etatsTaches,
   } = useStore();
+
+  // échéances propres à cette préparation, partagées avec la fenêtre des échéances
+  const toutesTaches = useTaches();
+  const tachesPrepa = useMemo(
+    () => toutesTaches.filter((t) => t.prepaId === prepa.id),
+    [toutesTaches, prepa.id],
+  );
+  const tachesOuvertes = tachesPrepa.filter((t) => !etatsTaches[t.id]?.fait).length;
 
   const [gestionFlotte, setGestionFlotte] = useState(false);
   const [nouvelHelico, setNouvelHelico] = useState({ immatriculation: '', modele: '' });
@@ -258,6 +269,18 @@ export default function PrepaDetail({
             Ajouter l'appareil
           </button>
         </div>
+      )}
+
+      {tachesPrepa.length > 0 && (
+        <>
+          <div className="bloc-titre">
+            Échéances de la semaine
+            <span className={tachesOuvertes ? 'compteur en-cours' : 'compteur'}>
+              {tachesOuvertes} à faire
+            </span>
+          </div>
+          <ListeTaches taches={tachesPrepa} sansReference />
+        </>
       )}
 
       <div className="bloc-titre">Jours de la semaine</div>

@@ -54,6 +54,10 @@ compte, et reste utilisable **hors connexion** une fois le secteur chargé.
   | Consultation des activations AZBA et R368 (zone centre) | 1 semaine avant |
   | Envoi de la préparation aux groupements de postes | 1 semaine avant |
 
+  Les échéances propres à une semaine de vol sont **reprises dans la préparation
+  elle-même**, sous le bloc équipage, avec le nombre de démarches encore à faire. C'est le
+  même état des deux côtés : cocher ici ou là revient au même.
+
 - **Campagnes** : un suivi distinct par campagne (par exemple une par année).
 - **Sauvegarde** par export / import d'un fichier JSON, à conserver ou à partager.
 
@@ -163,6 +167,7 @@ src/lib/semaines.ts        calendrier ISO 8601 (semaines, jours, libellés)
 src/lib/vols.ts            types de vol, domaines de tension, temps de visite
 src/lib/notam.ts           terrains concernés par un vol (distance au tracé)
 src/lib/taches.ts          échéances de campagne déduites du secteur et des préparations
+src/state/useTaches.ts     calcul partagé des échéances (en-tête, fenêtre, préparation)
 src/ui/                    panneaux secteur, tableau des lignes, détail d'ouvrage,
                            préparations de vol et planning par demi-journée
 ```

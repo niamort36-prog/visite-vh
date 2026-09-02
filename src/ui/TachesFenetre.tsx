@@ -1,18 +1,9 @@
 import { useMemo, useState } from 'react';
 import { useStore } from '../state/store';
-import { genererTaches, LIBELLE_CATEGORIE, type Tache } from '../lib/taches';
-import { delaiLisible, joursAvant } from '../lib/semaines';
-import { aujourdhui, dateCourte } from '../lib/geo';
+import { useTaches } from '../state/useTaches';
+import ListeTaches, { urgence } from './ListeTaches';
 
 type Filtre = 'ouvertes' | 'toutes';
-
-/** Urgence d'une échéance non faite. */
-function urgence(t: Tache): 'retard' | 'proche' | 'venir' {
-  const j = joursAvant(t.echeance);
-  if (j < 0) return 'retard';
-  if (j <= 14) return 'proche';
-  return 'venir';
-}
 
 /**
  * Récapitulatif des démarches à effectuer : courriers de début de campagne, et
@@ -22,30 +13,11 @@ function urgence(t: Tache): 'retard' | 'proche' | 'venir' {
  * préparations ; seul leur état est conservé.
  */
 export default function TachesFenetre({ onFermer }: { onFermer: () => void }) {
-  const {
-    campagnes,
-    campagneCourante,
-    index,
-    depts,
-    preparations,
-    lignes,
-    taches: etats,
-    majTache,
-    majCampagne,
-  } = useStore();
+  const { campagnes, campagneCourante, taches: etats, majCampagne } = useStore();
+  const toutes = useTaches();
   const [filtre, setFiltre] = useState<Filtre>('ouvertes');
 
   const campagne = campagnes.find((c) => c.id === campagneCourante);
-
-  const entrees = useMemo(
-    () => (index?.departements ?? []).filter((d) => depts.includes(d.code)),
-    [index, depts],
-  );
-
-  const toutes = useMemo(
-    () => (campagne ? genererTaches(campagne, entrees, preparations, lignes) : []),
-    [campagne, entrees, preparations, lignes],
-  );
 
   const visibles = useMemo(
     () => (filtre === 'toutes' ? toutes : toutes.filter((t) => !etats[t.id]?.fait)),
@@ -117,51 +89,7 @@ export default function TachesFenetre({ onFermer }: { onFermer: () => void }) {
             </p>
           )}
 
-          <ul className="taches">
-            {visibles.map((t) => {
-              const etat = etats[t.id] ?? { fait: false };
-              const u = urgence(t);
-              return (
-                <li key={t.id} className={etat.fait ? 'tache faite' : `tache ${u}`}>
-                  <input
-                    type="checkbox"
-                    checked={etat.fait}
-                    onChange={() =>
-                      majTache(t.id, {
-                        fait: !etat.fait,
-                        le: !etat.fait ? aujourdhui() : undefined,
-                      })
-                    }
-                  />
-                  <div className="tache-corps">
-                    <div className="tache-titre">
-                      <span className={`etiquette cat-${t.categorie}`}>
-                        {LIBELLE_CATEGORIE[t.categorie]}
-                      </span>
-                      <b>{t.titre}</b>
-                      {t.reference && <span className="tache-ref">{t.reference}</span>}
-                    </div>
-                    {t.detail && <div className="sous-titre">{t.detail}</div>}
-                    <div className="tache-echeance">
-                      {etat.fait ? (
-                        <>Fait le {dateCourte(etat.le)}</>
-                      ) : (
-                        <>
-                          Échéance {dateCourte(t.echeance)} — {delaiLisible(t.echeance)}
-                        </>
-                      )}
-                    </div>
-                    <input
-                      className="cellule tache-note"
-                      placeholder="note…"
-                      value={etat.note ?? ''}
-                      onChange={(e) => majTache(t.id, { note: e.target.value })}
-                    />
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+          <ListeTaches taches={visibles} />
         </div>
 
         <p className="aide fenetre-pied">

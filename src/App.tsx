@@ -7,7 +7,7 @@ import CampagneBarre from './ui/CampagneBarre';
 import PrepasPanel from './ui/PrepasPanel';
 import PrepaDetail from './ui/PrepaDetail';
 import TachesFenetre from './ui/TachesFenetre';
-import { genererTaches } from './lib/taches';
+import { useTaches } from './state/useTaches';
 import { joursAvant } from './lib/semaines';
 import { nomAffiche, useStore } from './state/store';
 import type { DemiJournee, Ligne, Pylone } from './types';
@@ -35,12 +35,9 @@ export default function App() {
     ajouterObservation,
     preparations,
     ajouterVol,
-    campagnes,
-    campagneCourante,
-    index,
-    depts,
     taches: etatsTaches,
   } = useStore();
+  const toutesTaches = useTaches();
   const [onglet, setOnglet] = useState<Onglet>('secteur');
   const [cible, setCible] = useState<CibleCarte | null>(null);
   const [panneauOuvert, setPanneauOuvert] = useState(true);
@@ -57,17 +54,12 @@ export default function App() {
 
   // échéances ouvertes, pour la pastille de l'en-tête
   const echeances = useMemo(() => {
-    const campagne = campagnes.find((c) => c.id === campagneCourante);
-    if (!campagne) return { ouvertes: 0, retard: 0 };
-    const entrees = (index?.departements ?? []).filter((d) => depts.includes(d.code));
-    const ouvertes = genererTaches(campagne, entrees, preparations, lignes).filter(
-      (t) => !etatsTaches[t.id]?.fait,
-    );
+    const ouvertes = toutesTaches.filter((t) => !etatsTaches[t.id]?.fait);
     return {
       ouvertes: ouvertes.length,
       retard: ouvertes.filter((t) => joursAvant(t.echeance) < 0).length,
     };
-  }, [campagnes, campagneCourante, index, depts, preparations, lignes, etatsTaches]);
+  }, [toutesTaches, etatsTaches]);
 
   // poignée de redimensionnement du panneau : utile pour lire le planning en entier
   const commencerRedim = useCallback((e: React.PointerEvent) => {
