@@ -7,8 +7,11 @@ compte, et reste utilisable **hors connexion** une fois le secteur chargé.
 ## Ce que fait l'application
 
 - **Carte** du réseau HTB : lignes colorées par tension, pylônes positionnés et numérotés,
-  postes RTE et postes sources Enedis. Fonds de carte IGN (plan et photo aérienne) et
-  OpenStreetMap.
+  postes RTE et postes sources Enedis. Quatre fonds : plan IGN, photo aérienne IGN,
+  OpenStreetMap et **carte VFR type OACI**.
+- **Espaces aériens** : la surcharge aéronautique (CTR, TMA, zones LF-R/LF-D, terrains,
+  fréquences, niveaux, points de report) s'affiche seule par-dessus le plan ou la photo, ou
+  complète pour former la carte VFR.
 - **Tableau du secteur** : une ligne par ouvrage, avec longueur, périmètre à visiter,
   kilomètres faits et restants, pourcentage d'avancement et date de dernière mise à jour.
 - **Pylônes frontières** : bornes du tronçon dont vous avez la charge, définies au clic sur
@@ -27,6 +30,7 @@ compte, et reste utilisable **hors connexion** une fois le secteur chargé.
 | Codes et libellés d'ouvrage (`code_ligne`, `nom_ligne`), sites électriques | ODRE / RTE | Nomenclature officielle, sans géométrie. |
 | Contours départementaux | france-geojson | Rattachement des ouvrages aux départements. |
 | Fonds de carte | IGN Géoplateforme, OpenStreetMap | Gratuits, sans clé d'accès. |
+| Carte VFR et espaces aériens | [open flightmaps](https://www.openflightmaps.org/) | *OFMA General Users' License*, usage commercial inclus. Zoom natif 7 à 12, sur-zoom au-delà. |
 
 **Deux limites à connaître :**
 
@@ -40,7 +44,9 @@ compte, et reste utilisable **hors connexion** une fois le secteur chargé.
    l'export JSON.
 
 Ces données sont indicatives et destinées à la préparation. Elles ne remplacent aucun
-document d'exploitation.
+document d'exploitation. **La carte VFR est fournie à titre non contractuel : elle ne
+remplace pas la documentation aéronautique officielle du SIA et ne doit pas servir à la
+navigation.**
 
 ## Démarrage
 
@@ -79,8 +85,8 @@ Actions** une fois pour toutes. La base d'URL est déduite du nom du dépôt.
 
 1. Dans l'onglet **Secteur**, cochez vos départements : les données réseau sont mises en
    cache dès leur chargement.
-2. Cliquez **Fond de carte — zoom 13** (ou 14, plus détaillé mais plus lourd) pour
-   pré-télécharger les tuiles IGN du secteur.
+2. Choisissez les fonds à emporter (plan IGN, photo aérienne, carte VFR) et le zoom : le
+   nombre de tuiles est annoncé avant le téléchargement.
 3. Installez l'application depuis le navigateur (« Installer » / « Ajouter à l'écran
    d'accueil »). Elle s'ouvre ensuite sans réseau, avec la carte et la saisie du suivi.
 
@@ -95,6 +101,7 @@ scripts/build-dataset.mjs  reconstruction des lignes, numérotation, découpage 
 scripts/make-icons.mjs     icônes de la PWA
 src/data/                  chargement des jeux de données
 src/state/store.tsx        campagnes, suivi, avancement, export / import
+src/map/fonds.ts           définition des fonds de carte (IGN, OSM, VFR)
 src/map/MapView.tsx        carte Leaflet, tracés, pylônes, postes, position GPS
 src/ui/                    panneaux secteur, tableau des lignes, détail d'ouvrage
 ```
@@ -102,5 +109,5 @@ src/ui/                    panneaux secteur, tableau des lignes, détail d'ouvra
 ## Licences
 
 Données OpenStreetMap sous [ODbL](https://www.openstreetmap.org/copyright), données RTE et
-IGN sous licence ouverte. Toute diffusion de cartes issues de l'application doit conserver
-ces mentions.
+IGN sous licence ouverte, cartes aéronautiques sous *OFMA General Users' License*. Toute
+diffusion de cartes issues de l'application doit conserver ces mentions.

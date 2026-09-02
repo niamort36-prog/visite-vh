@@ -61,6 +61,16 @@ export default defineConfig({
             },
           },
           {
+            // carte VFR / espaces aériens (open flightmaps)
+            urlPattern: ({ url }) => url.hostname.endsWith('newaydata.com'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'tuiles-vfr',
+              expiration: { maxEntries: 20000, maxAgeSeconds: 60 * 60 * 24 * 60 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
             urlPattern: ({ url }) => url.hostname.endsWith('tile.openstreetmap.org'),
             handler: 'CacheFirst',
             options: {

@@ -63,11 +63,15 @@ function palier(v) {
 }
 
 function normOperateur(tags = {}) {
-  const op = String(tags.operator || '').toLowerCase();
-  if (op.includes('rte')) return 'RTE';
+  // le tag `operator` d'OSM est libre : « RTE », « R.T.E. », « Électricité de France »…
+  const op = String(tags.operator || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+  if (/(^|[^a-z])(rte|r\.t\.e\.?)([^a-z]|$)|reseau de transport/.test(op)) return 'RTE';
   if (op.includes('enedis') || op.includes('erdf')) return 'Enedis';
   if (op.includes('sncf')) return 'SNCF Réseau';
-  if (op.includes('edf')) return 'EDF SEI';
+  if (op.includes('edf') || op.includes('electricite de france')) return 'EDF';
   return tags.operator || 'Inconnu';
 }
 
@@ -113,7 +117,7 @@ function motCle(nom) {
 function cle(s) {
   return String(s || '')
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .toUpperCase()
     .replace(/[^A-Z0-9]+/g, ' ')
     .trim();

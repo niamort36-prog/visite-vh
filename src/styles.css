@@ -901,3 +901,43 @@ button.principal:hover:not(:disabled) {
 .ouvrage code {
   font-size: 11px;
 }
+
+/* ---------------------------------------------------------------- */
+/* Fonds de carte à emporter                                         */
+/* ---------------------------------------------------------------- */
+
+.fonds-telechargement {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.fond-ligne {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px;
+}
+.fond-nom {
+  font-size: 12px;
+  font-weight: 600;
+}
+.fond-ligne button {
+  padding: 4px 8px;
+  border: 1px solid var(--bord);
+  background: #fff;
+  border-radius: var(--rayon);
+  cursor: pointer;
+  font-size: 12px;
+}
+.fond-ligne button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.fond-ligne button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.fond-ligne button small {
+  color: var(--texte-doux);
+  font-size: 10px;
+}

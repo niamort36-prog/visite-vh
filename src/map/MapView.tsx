@@ -5,14 +5,26 @@ import type { Ligne, Poste, Pylone } from '../types';
 import { calculerAvancement, codeAffiche, nomAffiche, useStore } from '../state/store';
 import { couleur, epaisseur } from '../lib/tensions';
 
-const IGN = 'https://data.geopf.fr/wmts';
-const wmts = (couche: string, format = 'image/png') =>
-  `${IGN}?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=${couche}` +
-  `&STYLE=normal&TILEMATRIXSET=PM&FORMAT=${format}` +
-  '&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}';
+import {
+  COUCHE_AERO,
+  FOND_IGN_ORTHO,
+  FOND_IGN_PLAN,
+  FOND_OSM,
+  FOND_VFR_BASE,
+  type Fond,
+} from './fonds';
 
-const ATTR_IGN = '© <a href="https://www.ign.fr/">IGN</a> — Géoplateforme';
-const ATTR_OSM = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
+/** Construit une couche de tuiles Leaflet à partir d'une définition de fond. */
+function coucheTuiles(f: Fond): L.TileLayer {
+  return L.tileLayer(f.url, {
+    attribution: f.attribution,
+    maxZoom: 19,
+    maxNativeZoom: f.zoomNatifMax,
+    minNativeZoom: f.zoomNatifMin,
+    // au-delà du zoom natif, mieux vaut étirer la tuile que ne rien afficher
+    ...(f.zoomNatifMin ? { minZoom: 0 } : {}),
+  });
+}
 
 /** Seuils d'affichage : au-delà, la carte deviendrait illisible et lente. */
 const ZOOM_PYLONES = 12;
@@ -47,18 +59,15 @@ export default function MapView({ cible, onPyloneClic }: Props) {
   useEffect(() => {
     if (!conteneur.current || carte.current) return;
 
-    const plan = L.tileLayer(wmts('GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2'), {
-      attribution: ATTR_IGN,
-      maxZoom: 19,
-    });
-    const ortho = L.tileLayer(wmts('ORTHOIMAGERY.ORTHOPHOTOS', 'image/jpeg'), {
-      attribution: ATTR_IGN,
-      maxZoom: 19,
-    });
-    const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: ATTR_OSM,
-      maxZoom: 19,
-    });
+    const plan = coucheTuiles(FOND_IGN_PLAN);
+    const ortho = coucheTuiles(FOND_IGN_ORTHO);
+    const osm = coucheTuiles(FOND_OSM);
+    // La carte VFR combine le relief open flightmaps et sa surcharge aéronautique.
+    const vfrFond = coucheTuiles(FOND_VFR_BASE);
+    const vfrAero = coucheTuiles(COUCHE_AERO);
+    const vfr = L.layerGroup([vfrFond, vfrAero]);
+    // Même surcharge, disponible seule pour se superposer au plan ou à la photo.
+    const aero = coucheTuiles(COUCHE_AERO);
 
     const m = L.map(conteneur.current, {
       center: [46.7, 2.4],
@@ -69,11 +78,22 @@ export default function MapView({ cible, onPyloneClic }: Props) {
     });
     L.control
       .layers(
-        { 'Plan IGN': plan, 'Photo aérienne': ortho, OpenStreetMap: osm },
-        {},
+        {
+          'Plan IGN': plan,
+          'Photo aérienne': ortho,
+          OpenStreetMap: osm,
+          'Carte VFR (OACI)': vfr,
+        },
+        { 'Espaces aériens': aero },
         { position: 'topright' },
       )
       .addTo(m);
+
+    // La carte VFR contient déjà les espaces aériens : on évite le doublon.
+    m.on('baselayerchange', (e: L.LayersControlEvent) => {
+      if (e.layer === vfr && m.hasLayer(aero)) m.removeLayer(aero);
+    });
+
     L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(m);
 
     coucheLignes.current = L.layerGroup().addTo(m);

@@ -2,10 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { useStore } from '../state/store';
 import { km, octets, tuilesPourBbox } from '../lib/geo';
 import { estHorsLigne } from '../data/reseau';
+import { COUCHE_AERO, FONDS_TELECHARGEABLES, urlTuile } from '../map/fonds';
 
 /**
  * Choix du secteur : quels départements charger, et mise à disposition hors ligne
- * (données réseau + fond de carte) avant de partir en vol.
+ * (données réseau + fonds de carte) avant de partir en vol.
  */
 export default function SecteurPanel() {
   const { index, depts, setDepts, chargement } = useStore();
@@ -40,30 +41,41 @@ export default function SecteurPanel() {
     [index, depts],
   );
 
-  /** Pré-charge les tuiles IGN de l'emprise sélectionnée pour l'usage en vol. */
-  async function preparerHorsLigne(zoomMax: number) {
-    if (!selection.length) return;
+  /** Nombre de tuiles à télécharger pour un fond et un zoom maximum donnés. */
+  function compterTuiles(indice: number, zoomMax: number): number {
+    const c = FONDS_TELECHARGEABLES[indice];
+    const zMax = Math.min(zoomMax, c.fond.zoomNatifMax);
+    return selection.reduce(
+      (a, d) => a + tuilesPourBbox(d.bbox, c.zMin, zMax).length * (c.avecAero ? 2 : 1),
+      0,
+    );
+  }
+
+  /** Pré-charge les tuiles d'un fond sur l'emprise sélectionnée, pour l'usage en vol. */
+  async function preparerHorsLigne(indice: number, zoomMax: number) {
+    const choix = FONDS_TELECHARGEABLES[indice];
+    if (!selection.length || !choix) return;
+
     const urls: string[] = [];
+    const zMax = Math.min(zoomMax, choix.fond.zoomNatifMax);
     for (const d of selection) {
-      for (const t of tuilesPourBbox(d.bbox, 8, zoomMax)) {
-        urls.push(
-          'https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0' +
-            '&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&TILEMATRIXSET=PM' +
-            `&FORMAT=image/png&TILEMATRIX=${t.z}&TILEROW=${t.y}&TILECOL=${t.x}`,
-        );
+      for (const t of tuilesPourBbox(d.bbox, choix.zMin, zMax)) {
+        urls.push(urlTuile(choix.fond, t.z, t.x, t.y));
+        // la carte VFR n'a de sens qu'accompagnée de sa surcharge aéronautique
+        if (choix.avecAero) urls.push(urlTuile(COUCHE_AERO, t.z, t.x, t.y));
       }
     }
     if (
       urls.length > 40000 &&
       !window.confirm(
         `Ce secteur représente ${urls.length.toLocaleString('fr-FR')} tuiles, ` +
-          "soit un téléchargement long et volumineux. Continuer ?",
+          'soit un téléchargement long et volumineux. Continuer ?',
       )
     )
       return;
-    const cache = await caches.open('tuiles-ign');
-    setTache({ libelle: 'Fond de carte', fait: 0, total: urls.length });
-    let fait = 0;
+
+    const cache = await caches.open(choix.avecAero ? 'tuiles-vfr' : 'tuiles-ign');
+    setTache({ libelle: choix.nom, fait: 0, total: urls.length });
     const lot = 8;
     for (let i = 0; i < urls.length; i += lot) {
       await Promise.all(
@@ -75,15 +87,10 @@ export default function SecteurPanel() {
           }
         }),
       );
-      fait = Math.min(i + lot, urls.length);
-      setTache({ libelle: 'Fond de carte', fait, total: urls.length });
+      setTache({ libelle: choix.nom, fait: Math.min(i + lot, urls.length), total: urls.length });
     }
     setTache(null);
   }
-
-  const totalTuiles = useMemo(() => {
-    return selection.reduce((a, d) => a + tuilesPourBbox(d.bbox, 8, 14).length, 0);
-  }, [selection]);
 
   if (!index) return <div className="vide">Chargement du catalogue…</div>;
 
@@ -140,18 +147,25 @@ export default function SecteurPanel() {
 
           <div className="bloc-titre">Préparer le vol hors connexion</div>
           <p className="aide">
-            Les données réseau sont déjà mises en cache à leur chargement. Ce bouton télécharge en
-            plus le fond de carte du secteur (~{totalTuiles.toLocaleString('fr-FR')} tuiles jusqu'au
-            zoom 14).
+            Les données réseau sont mises en cache dès leur chargement. Choisissez ici les fonds de
+            carte à emporter : ils resteront affichables sans réseau sur l'emprise du secteur.
           </p>
-          <div className="ligne-boutons">
-            <button onClick={() => preparerHorsLigne(13)} disabled={!!tache}>
-              Fond de carte — zoom 13
-            </button>
-            <button onClick={() => preparerHorsLigne(14)} disabled={!!tache}>
-              zoom 14 (plus détaillé)
-            </button>
+          <div className="fonds-telechargement">
+            {FONDS_TELECHARGEABLES.map((c, i) => (
+              <div key={c.fond.cle} className="fond-ligne">
+                <span className="fond-nom">{c.nom}</span>
+                <div className="ligne-boutons">
+                  {(c.fond.zoomNatifMax >= 14 ? [13, 14] : [11, 12]).map((z) => (
+                    <button key={z} onClick={() => preparerHorsLigne(i, z)} disabled={!!tache}>
+                      zoom {z}
+                      <small> · {compterTuiles(i, z).toLocaleString('fr-FR')} tuiles</small>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
+
           {tache && (
             <div className="progression">
               <div className="barre">
