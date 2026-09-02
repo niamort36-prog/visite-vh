@@ -53,6 +53,14 @@ export default function SecteurPanel() {
         );
       }
     }
+    if (
+      urls.length > 40000 &&
+      !window.confirm(
+        `Ce secteur représente ${urls.length.toLocaleString('fr-FR')} tuiles, ` +
+          "soit un téléchargement long et volumineux. Continuer ?",
+      )
+    )
+      return;
     const cache = await caches.open('tuiles-ign');
     setTache({ libelle: 'Fond de carte', fait: 0, total: urls.length });
     let fait = 0;

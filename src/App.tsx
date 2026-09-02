@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import MapView, { type CibleCarte } from './map/MapView';
 import SecteurPanel from './ui/SecteurPanel';
 import LignesTable from './ui/LignesTable';
@@ -17,7 +17,6 @@ export default function App() {
   const [cible, setCible] = useState<CibleCarte | null>(null);
   const [panneauOuvert, setPanneauOuvert] = useState(true);
   const [actionPylone, setActionPylone] = useState<{ ligne: Ligne; pylone: Pylone } | null>(null);
-  const importRef = useRef<HTMLInputElement>(null);
 
   const ligne = lignes.find((l) => l.id === ligneActive) ?? null;
 
@@ -73,7 +72,7 @@ export default function App() {
               onClick={() => setOnglet('ligne')}
               disabled={!ligne}
             >
-              {ligne ? 'Ouvrage' : 'Ouvrage'}
+              Ouvrage
             </button>
           </nav>
 
@@ -177,14 +176,6 @@ export default function App() {
           </div>
         </div>
       )}
-
-      <input
-        ref={importRef}
-        type="file"
-        accept="application/json"
-        style={{ display: 'none' }}
-        onChange={() => undefined}
-      />
     </div>
   );
 }
