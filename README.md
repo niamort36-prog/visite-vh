@@ -30,6 +30,14 @@ compte, et reste utilisable **hors connexion** une fois le secteur chargé.
   planifiés les **terrains à code OACI** situés dans un rayon réglable (10, 15 ou 25 km),
   avec leur distance au tracé et les lignes concernées ; les codes se copient d'un clic et
   le service officiel s'ouvre à côté. Voir la limite expliquée plus bas.
+- **Sites Seveso** : une colonne du planning signale les établissements Seveso situés à moins
+  de 2 km du tracé, avec le seuil (haut ou bas), l'adresse, l'activité et la distance. Le
+  téléphone et le courriel se saisissent dans l'application — ils n'existent pas dans l'open
+  data — et sont conservés puis repris dans l'export.
+- **Agglomérations** : les ouvrages qui traversent une zone urbanisée apparaissent **sur fond
+  vert** dans le tableau des lignes et dans le planning, pour rappeler qu'un **bi-turbine**
+  est obligatoire pour ce survol. Une préparation en mono-turbine qui contient de tels
+  ouvrages affiche un avertissement.
 - **Campagnes** : un suivi distinct par campagne (par exemple une par année).
 - **Sauvegarde** par export / import d'un fichier JSON, à conserver ou à partager.
 
@@ -43,6 +51,8 @@ compte, et reste utilisable **hors connexion** une fois le secteur chargé.
 | Fonds de carte | IGN Géoplateforme, OpenStreetMap | Gratuits, sans clé d'accès. |
 | Carte VFR et espaces aériens | [open flightmaps](https://www.openflightmaps.org/) | *OFMA General Users' License*, usage commercial inclus. Zoom natif 7 à 12, sur-zoom au-delà. |
 | Aérodromes et hélistations | [OurAirports](https://ourairports.com/) | Domaine public. 1 666 terrains français, dont 433 avec code OACI. |
+| Établissements Seveso | Géorisques / BRGM (WFS) | 1 302 sites : nom, adresse, activité, seuil haut ou bas. Ni téléphone ni courriel. |
+| Zones urbanisées | Corine Land Cover 2018, classes 111 et 112 | 27 392 polygones. Approximation nationale des agglomérations au sens du survol. |
 
 **Deux limites à connaître :**
 
@@ -64,6 +74,12 @@ pire qu'absent. L'application se limite à ce qu'elle peut garantir : dire **que
 consulter**, calculé sur la géométrie réelle des ouvrages planifiés, et ouvrir le service
 officiel avec les codes prêts à coller.
 
+**Le repérage des agglomérations est une approximation.** Corine Land Cover décrit le tissu
+urbain avec une unité minimale de 25 hectares : il retient les villes et les bourgs, mais
+ignore les hameaux, et son tracé ne coïncide pas exactement avec les zones jaunes de la carte
+OACI. Le fond vert est donc une alerte de préparation, à confirmer sur la carte OACI, pas une
+délimitation réglementaire.
+
 Ces données sont indicatives et destinées à la préparation. Elles ne remplacent aucun
 document d'exploitation. **La carte VFR est fournie à titre non contractuel : elle ne
 remplace pas la documentation aéronautique officielle du SIA et ne doit pas servir à la
@@ -81,8 +97,9 @@ L'application est alors disponible sur <http://localhost:5173/visite-vh/>.
 ## Régénérer les données réseau
 
 ```bash
-npm run data:fetch    # télécharge le réseau depuis Overpass (≈ 1 h 30, reprenable)
-npm run data:build    # produit public/data/ (index, départements, catalogue RTE)
+npm run data:fetch      # réseau HTB depuis Overpass (≈ 2 h, reprenable)
+npm run data:contexte   # sites Seveso et zones urbanisées (≈ 5 min)
+npm run data:build      # produit public/data/
 ```
 
 `data:fetch` découpe la France en mailles d'un degré, interroge quatre miroirs Overpass en
@@ -118,7 +135,9 @@ sauvegarde, et elle sert aussi à partager l'avancement avec un collègue.
 
 ```
 scripts/fetch-osm.mjs      téléchargement Overpass, maillé et reprenable
-scripts/build-dataset.mjs  reconstruction des lignes, numérotation, découpage départemental
+scripts/fetch-contexte.mjs sites Seveso (Géorisques) et zones urbanisées (Corine Land Cover)
+scripts/build-dataset.mjs  reconstruction des lignes, numérotation, découpage départemental,
+                           proximité Seveso et traversée d'agglomération
 scripts/make-icons.mjs     icônes de la PWA
 src/data/                  chargement des jeux de données
 src/state/store.tsx        campagnes, suivi, avancement, export / import

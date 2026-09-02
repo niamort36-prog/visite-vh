@@ -28,6 +28,10 @@ export interface Ligne {
   candidatsRte?: string[];
   /** aucune extrémité nommée dans OSM : l'ouvrage reste à rattacher par l'exploitant */
   aIdentifier?: boolean;
+  /** sites Seveso à moins de 2 km du tracé, du plus proche au plus éloigné */
+  seveso?: SiteSeveso[];
+  /** traversée d'agglomération : kilomètres concernés et nombre de zones */
+  agglo?: { km: number; n: number };
   tension: Tension;
   operateur: string;
   nbCircuits?: number;
@@ -137,6 +141,7 @@ export interface Sauvegarde {
   observations: Record<string, Observation[]>;
   preparations?: Record<string, Preparation[]>;
   helicopteres?: Helicoptere[];
+  contactsSeveso?: Record<string, ContactSeveso>;
 }
 
 /* ------------------------------------------------------------------ */
@@ -210,4 +215,33 @@ export interface Aerodrome {
   y: number;
   /** longitude */
   x: number;
+}
+
+/** Établissement Seveso proche d'un ouvrage (source Géorisques). */
+export interface SiteSeveso {
+  /** identifiant national (AIOT) */
+  id: string;
+  /** raison sociale */
+  n: string;
+  /** seuil haut ou bas */
+  t: 'haut' | 'bas';
+  /** adresse */
+  a: string;
+  /** commune */
+  c: string;
+  /** activité */
+  act: string;
+  /** état administratif */
+  s: string;
+  y: number;
+  x: number;
+  /** distance au tracé, en km */
+  d: number;
+}
+
+/** Coordonnées d'un site Seveso, saisies par l'exploitant : absentes de l'open data. */
+export interface ContactSeveso {
+  telephone?: string;
+  courriel?: string;
+  note?: string;
 }

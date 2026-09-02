@@ -4,6 +4,7 @@ import { calculerAvancement, codeAffiche, nomAffiche, useStore } from '../state/
 import { couleur, LIBELLE_STATUT } from '../lib/tensions';
 import { aujourdhui, dateCourte, km } from '../lib/geo';
 import RattacherOuvrage from './RattacherOuvrage';
+import { SevesoDetail } from './SevesoCellule';
 
 interface Props {
   ligne: Ligne;
@@ -68,6 +69,20 @@ export default function LignePanel({ ligne, onCadrerPylone }: Props) {
       </div>
 
       <RattacherOuvrage ligne={ligne} s={s} />
+
+      {(ligne.agglo || ligne.seveso?.length) && (
+        <>
+          <div className="bloc-titre">Contexte de survol</div>
+          {ligne.agglo && (
+            <p className="alerte-mono">
+              Traverse une agglomération sur <b>{ligne.agglo.km.toFixed(1).replace('.', ',')} km</b>
+              {ligne.agglo.n > 1 ? ` (${ligne.agglo.n} zones)` : ''} : le survol impose un appareil{' '}
+              <b>bi-turbine</b>.
+            </p>
+          )}
+          {!!ligne.seveso?.length && <SevesoDetail sites={ligne.seveso} />}
+        </>
+      )}
 
       <div className="bloc-titre">Statut</div>
       <div className="ligne-boutons">

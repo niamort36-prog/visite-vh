@@ -6,6 +6,7 @@ import { domaine, dureeMinutes, libelleDuree, nomTypeVol, TYPES_VOL } from '../l
 import { joursDeSemaine, libelleJour, libelleJourCourt, libelleSemaine } from '../lib/semaines';
 import { km as fmtKm } from '../lib/geo';
 import NotamJournee from './NotamJournee';
+import { SevesoBadge, SevesoDetail } from './SevesoCellule';
 
 const DEMIS: { cle: DemiJournee; nom: string }[] = [
   { cle: 'matin', nom: 'Matin' },
@@ -48,6 +49,8 @@ export default function PrepaDetail({
   const [nouvelHelico, setNouvelHelico] = useState({ immatriculation: '', modele: '' });
   const [ajoutManuel, setAjoutManuel] = useState<{ jour: string; demi: DemiJournee } | null>(null);
   const [recherche, setRecherche] = useState('');
+  /** identifiant du vol dont le détail Seveso est déplié */
+  const [sevesoOuvert, setSevesoOuvert] = useState<string | null>(null);
 
   const joursSemaine = useMemo(
     () => joursDeSemaine(prepa.annee, prepa.semaine),
@@ -90,6 +93,20 @@ export default function PrepaDetail({
       }
     return { km, min, n };
   }, [prepa, joursRetenus]);
+
+  /** Contexte de survol d'un ouvrage, quand son département est chargé. */
+  const parId = useMemo(() => new Map(lignes.map((l) => [l.id, l])), [lignes]);
+
+  /** Ouvrages en agglomération alors que la préparation est en mono-turbine. */
+  const alerteMono = useMemo(() => {
+    if (prepa.typeVol !== 'VH_MONO') return 0;
+    const ids = new Set<string>();
+    for (const c of Object.values(prepa.creneaux))
+      for (const v of [...c.matin, ...c.apresMidi]) {
+        if (parId.get(v.ligneId)?.agglo) ids.add(v.ligneId);
+      }
+    return ids.size;
+  }, [prepa, parId]);
 
   const basculerJour = (j: string) =>
     majPreparation(prepa.id, {
@@ -348,13 +365,16 @@ export default function PrepaDetail({
                           <th>Domaine</th>
                           <th>km</th>
                           <th>Durée</th>
+                          <th title="Sites Seveso à moins de 2 km du tracé">Seveso</th>
                           <th>Commentaire</th>
                           <th />
                         </tr>
                       </thead>
                       <tbody>
-                        {vols.map((v, i) => (
-                          <tr key={v.id}>
+                        {vols.map((v, i) => {
+                          const ref = parId.get(v.ligneId);
+                          return (
+                          <tr key={v.id} className={ref?.agglo ? 'agglo' : undefined}>
                             <td className="col-nom">
                               <span
                                 className="pastille-tension"
@@ -395,6 +415,21 @@ export default function PrepaDetail({
                               />
                               {duree(v) >= 60 && <small>{libelleDuree(duree(v))}</small>}
                             </td>
+                            <td className="col-seveso">
+                              {ref ? (
+                                <SevesoBadge
+                                  sites={ref.seveso ?? []}
+                                  ouvert={sevesoOuvert === v.id}
+                                  onToggle={() =>
+                                    setSevesoOuvert((x) => (x === v.id ? null : v.id))
+                                  }
+                                />
+                              ) : (
+                                <span className="aide" title="Département non chargé">
+                                  ?
+                                </span>
+                              )}
+                            </td>
                             <td>
                               <input
                                 className="cellule"
@@ -430,7 +465,19 @@ export default function PrepaDetail({
                               </button>
                             </td>
                           </tr>
-                        ))}
+                          );
+                        })}
+                        {vols.map((v) => {
+                          const ref = parId.get(v.ligneId);
+                          if (sevesoOuvert !== v.id || !ref?.seveso?.length) return null;
+                          return (
+                            <tr key={`${v.id}-seveso`} className="rangee-seveso">
+                              <td colSpan={7}>
+                                <SevesoDetail sites={ref.seveso} />
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -440,6 +487,14 @@ export default function PrepaDetail({
           })}
         </div>
       ))}
+
+      {alerteMono > 0 && (
+        <p className="alerte-mono">
+          <b>{alerteMono}</b> ouvrage{alerteMono > 1 ? 's' : ''} de cette préparation
+          traverse{alerteMono > 1 ? 'nt' : ''} une agglomération : le survol impose un
+          appareil <b>bi-turbine</b>, or la préparation est en {nomTypeVol(prepa.typeVol)}.
+        </p>
+      )}
 
       {totalPrepa.n > 0 && (
         <div className="synthese">

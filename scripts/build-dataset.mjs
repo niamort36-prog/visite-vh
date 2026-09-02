@@ -513,6 +513,193 @@ function construireAerodromes() {
   return out;
 }
 
+
+/* ------------------------------------------------------------------ */
+/* 5 ter. Contexte de survol : Seveso et agglomérations                 */
+/* ------------------------------------------------------------------ */
+
+/** Rayon de rattachement d'un site Seveso à une ligne, en km. */
+const RAYON_SEVESO = 2;
+/** Pas d'échantillonnage du tracé pour mesurer la traversée d'agglomération. */
+const PAS_ECHANTILLON = 0.1;
+
+/** Distance d'un point à un segment, en km (approximation plane locale). */
+function distPointSegment(p, a, b) {
+  const k = Math.cos((p.lat * Math.PI) / 180);
+  const px = p.lon * k;
+  const py = p.lat;
+  const ax = a.lon * k;
+  const ay = a.lat;
+  const bx = b.lon * k;
+  const by = b.lat;
+  const dx = bx - ax;
+  const dy = by - ay;
+  const l2 = dx * dx + dy * dy;
+  let t = l2 === 0 ? 0 : ((px - ax) * dx + (py - ay) * dy) / l2;
+  t = Math.max(0, Math.min(1, t));
+  return haversine(p, { lat: ay + t * dy, lon: (ax + t * dx) / k });
+}
+
+/** Index régulier : associe des objets à des cellules de `taille` degrés. */
+function creerGrille(taille) {
+  const cases = new Map();
+  const cle = (ix, iy) => `${ix}_${iy}`;
+  return {
+    taille,
+    ajouter(bbox, valeur) {
+      const [s, w, n, e] = bbox;
+      for (let ix = Math.floor(w / taille); ix <= Math.floor(e / taille); ix++)
+        for (let iy = Math.floor(s / taille); iy <= Math.floor(n / taille); iy++) {
+          const k = cle(ix, iy);
+          let l = cases.get(k);
+          if (!l) cases.set(k, (l = []));
+          l.push(valeur);
+        }
+    },
+    autour(lat, lon, rayonDeg = 0) {
+      const out = new Set();
+      const ix0 = Math.floor((lon - rayonDeg) / taille);
+      const ix1 = Math.floor((lon + rayonDeg) / taille);
+      const iy0 = Math.floor((lat - rayonDeg) / taille);
+      const iy1 = Math.floor((lat + rayonDeg) / taille);
+      for (let ix = ix0; ix <= ix1; ix++)
+        for (let iy = iy0; iy <= iy1; iy++)
+          for (const v of cases.get(cle(ix, iy)) || []) out.add(v);
+      return out;
+    },
+  };
+}
+
+/** Sites Seveso, indexés spatialement. */
+function chargerSeveso() {
+  const f = path.join(RAW_DIR, '_seveso.geojson');
+  if (!fs.existsSync(f)) {
+    console.log('  ! sites Seveso absents — étape ignorée (npm run data:contexte)');
+    return null;
+  }
+  const gj = JSON.parse(fs.readFileSync(f, 'utf8'));
+  const sites = [];
+  for (const ft of gj.features) {
+    const c = ft.geometry?.coordinates;
+    if (!c) continue;
+    const p = ft.properties;
+    sites.push({
+      id: p.identifier || '',
+      n: p.name || '',
+      // « Seveso seuil haut » / « Seveso seuil bas »
+      t: /haut/i.test(p.type || '') ? 'haut' : 'bas',
+      a: [p.streetname, p.postalcode].filter(Boolean).join(' '),
+      c: p.city || '',
+      act: p.activity || '',
+      s: p.status || '',
+      y: r5(c[1]),
+      x: r5(c[0]),
+    });
+  }
+  const grille = creerGrille(0.1);
+  for (const site of sites) grille.ajouter([site.y, site.x, site.y, site.x], site);
+  console.log(`→ ${sites.length} établissements Seveso`);
+  return { sites, grille };
+}
+
+/** Zones urbanisées (CLC 111/112), indexées spatialement. */
+function chargerAgglomerations() {
+  const f = path.join(RAW_DIR, '_agglomerations.geojson');
+  if (!fs.existsSync(f)) {
+    console.log('  ! zones urbanisées absentes — étape ignorée (npm run data:contexte)');
+    return null;
+  }
+  const gj = JSON.parse(fs.readFileSync(f, 'utf8'));
+  const zones = [];
+  for (const ft of gj.features) {
+    const g = ft.geometry;
+    if (!g) continue;
+    const polys = g.type === 'Polygon' ? [g.coordinates] : g.coordinates;
+    let s = 90;
+    let w = 180;
+    let n = -90;
+    let e = -180;
+    for (const poly of polys)
+      for (const ring of poly)
+        for (const [lon, lat] of ring) {
+          if (lat < s) s = lat;
+          if (lat > n) n = lat;
+          if (lon < w) w = lon;
+          if (lon > e) e = lon;
+        }
+    zones.push({ polys, bbox: [s, w, n, e], i: zones.length });
+  }
+  const grille = creerGrille(0.05);
+  for (const z of zones) grille.ajouter(z.bbox, z);
+  console.log(`→ ${zones.length} zones urbanisées (Corine Land Cover 2018)`);
+  return { zones, grille };
+}
+
+/** Le point est-il dans une zone urbanisée ? Renvoie l'index de la zone, ou -1. */
+function zoneUrbaine(lat, lon, agglos) {
+  for (const z of agglos.grille.autour(lat, lon)) {
+    const [s, w, n, e] = z.bbox;
+    if (lat < s || lat > n || lon < w || lon > e) continue;
+    for (const poly of z.polys) {
+      if (!dansAnneau(lon, lat, poly[0])) continue;
+      let trou = false;
+      for (let k = 1; k < poly.length; k++) if (dansAnneau(lon, lat, poly[k])) trou = true;
+      if (!trou) return z.i;
+    }
+  }
+  return -1;
+}
+
+/**
+ * Longueur du tracé située à l'intérieur d'une agglomération, obtenue en
+ * échantillonnant la ligne tous les PAS_ECHANTILLON kilomètres.
+ */
+function traverseeAgglomeration(geom, agglos) {
+  let dedans = 0;
+  const zones = new Set();
+  for (let i = 1; i < geom.length; i++) {
+    const a = { lat: geom[i - 1][0], lon: geom[i - 1][1] };
+    const b = { lat: geom[i][0], lon: geom[i][1] };
+    const d = haversine(a, b);
+    const n = Math.max(1, Math.ceil(d / PAS_ECHANTILLON));
+    for (let k = 0; k < n; k++) {
+      // on teste le milieu de chaque sous-segment
+      const t = (k + 0.5) / n;
+      const lat = a.lat + (b.lat - a.lat) * t;
+      const lon = a.lon + (b.lon - a.lon) * t;
+      const z = zoneUrbaine(lat, lon, agglos);
+      if (z >= 0) {
+        dedans += d / n;
+        zones.add(z);
+      }
+    }
+  }
+  return { km: Math.round(dedans * 100) / 100, n: zones.size };
+}
+
+/** Sites Seveso dont le tracé passe à moins de RAYON_SEVESO kilomètres. */
+function sevesoProches(geom, seveso) {
+  const rayonDeg = RAYON_SEVESO / 100; // large, affiné ensuite par la distance réelle
+  const candidats = new Set();
+  for (const [lat, lon] of geom) for (const s of seveso.grille.autour(lat, lon, rayonDeg)) candidats.add(s);
+
+  const out = [];
+  for (const site of candidats) {
+    let min = Infinity;
+    for (let i = 1; i < geom.length; i++) {
+      const d = distPointSegment(
+        { lat: site.y, lon: site.x },
+        { lat: geom[i - 1][0], lon: geom[i - 1][1] },
+        { lat: geom[i][0], lon: geom[i][1] },
+      );
+      if (d < min) min = d;
+      if (min < 0.01) break;
+    }
+    if (min <= RAYON_SEVESO) out.push({ ...site, d: Math.round(min * 100) / 100 });
+  }
+  return out.sort((a, b) => a.d - b.d);
+}
+
 /* ------------------------------------------------------------------ */
 /* 6. Assemblage                                                       */
 /* ------------------------------------------------------------------ */
@@ -686,6 +873,36 @@ function main() {
       geom: seqPts.map((p) => [r5(p.lat), r5(p.lon)]),
       pylones,
     });
+  }
+
+  // -- contexte de survol : Seveso et agglomérations -----------------
+  const seveso = chargerSeveso();
+  const agglos = chargerAgglomerations();
+  if (seveso || agglos) {
+    let avecSeveso = 0;
+    let avecAgglo = 0;
+    let traite = 0;
+    for (const l of lignes) {
+      if (seveso) {
+        const sites = sevesoProches(l.geom, seveso);
+        if (sites.length) {
+          l.seveso = sites;
+          avecSeveso++;
+        }
+      }
+      if (agglos) {
+        const t = traverseeAgglomeration(l.geom, agglos);
+        if (t.km > 0) {
+          l.agglo = t;
+          avecAgglo++;
+        }
+      }
+      if (++traite % 500 === 0) console.log(`  … contexte ${traite}/${lignes.length}`);
+    }
+    console.log(
+      `  ✓ ${avecSeveso} lignes à moins de ${RAYON_SEVESO} km d'un site Seveso, ` +
+        `${avecAgglo} traversant une agglomération`,
+    );
   }
 
   // Ouvrages dont aucune extrémité n'est nommée dans OSM : on leur donne un

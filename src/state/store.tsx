@@ -9,6 +9,7 @@ import React, {
 } from 'react';
 import type {
   Campagne,
+  ContactSeveso,
   Creneau,
   DemiJournee,
   Helicoptere,
@@ -37,6 +38,8 @@ interface Persiste {
   preparations: Record<string, Preparation[]>;
   /** flotte connue, commune à toutes les campagnes */
   helicopteres: Helicoptere[];
+  /** coordonnées des sites Seveso, saisies par l'exploitant, par identifiant AIOT */
+  contactsSeveso: Record<string, ContactSeveso>;
 }
 
 function campagneParDefaut(): Campagne {
@@ -57,7 +60,12 @@ function lire(): Persiste {
       const p = JSON.parse(brut) as Persiste;
       // champs ajoutés après coup : on complète les états enregistrés plus tôt
       if (p.campagnes?.length)
-        return { ...p, preparations: p.preparations ?? {}, helicopteres: p.helicopteres ?? [] };
+        return {
+          ...p,
+          preparations: p.preparations ?? {},
+          helicopteres: p.helicopteres ?? [],
+          contactsSeveso: p.contactsSeveso ?? {},
+        };
     }
   } catch {
     /* stockage indisponible ou corrompu : on repart d'un état vierge */
@@ -71,6 +79,7 @@ function lire(): Persiste {
     observations: { [c.id]: [] },
     preparations: { [c.id]: [] },
     helicopteres: [],
+    contactsSeveso: {},
   };
 }
 
@@ -130,6 +139,9 @@ interface Ctx {
   helicopteres: Helicoptere[];
   ajouterHelicoptere: (h: Omit<Helicoptere, 'id'>) => void;
   supprimerHelicoptere: (id: string) => void;
+
+  contactsSeveso: Record<string, ContactSeveso>;
+  majContactSeveso: (id: string, patch: ContactSeveso) => void;
 
   exporter: () => void;
   importer: (fichier: File) => Promise<void>;
@@ -453,6 +465,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setEtat((s) => ({ ...s, helicopteres: s.helicopteres.filter((h) => h.id !== id) }));
   }, []);
 
+  const majContactSeveso = useCallback((id: string, patch: ContactSeveso) => {
+    setEtat((s) => ({
+      ...s,
+      contactsSeveso: { ...s.contactsSeveso, [id]: { ...s.contactsSeveso[id], ...patch } },
+    }));
+  }, []);
+
   const exporter = useCallback(() => {
     const sauvegarde: Sauvegarde = {
       format: 'visite-vh',
@@ -463,6 +482,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       observations: etat.observations,
       preparations: etat.preparations,
       helicopteres: etat.helicopteres,
+      contactsSeveso: etat.contactsSeveso,
     };
     const blob = new Blob([JSON.stringify(sauvegarde, null, 1)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -488,6 +508,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         observations: { ...cur.observations, ...s.observations },
         preparations: { ...cur.preparations, ...(s.preparations ?? {}) },
         helicopteres: fusionnerHelicos(cur.helicopteres, s.helicopteres ?? []),
+        contactsSeveso: { ...cur.contactsSeveso, ...(s.contactsSeveso ?? {}) },
         campagneCourante: s.campagnes[0]?.id ?? cur.campagneCourante,
       };
     });
@@ -525,6 +546,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     helicopteres: etat.helicopteres,
     ajouterHelicoptere,
     supprimerHelicoptere,
+    contactsSeveso: etat.contactsSeveso,
+    majContactSeveso,
     exporter,
     importer,
   };

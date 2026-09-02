@@ -18,6 +18,8 @@ export default function LignesTable({ onOuvrir }: Props) {
   const [statutsActifs, setStatutsActifs] = useState<StatutLigne[]>([]);
   const [tri, setTri] = useState<{ col: Colonne; desc: boolean }>({ col: 'nom', desc: false });
   const [aIdentifierSeules, setAIdentifierSeules] = useState(false);
+  const [aggloSeules, setAggloSeules] = useState(false);
+  const [sevesoSeules, setSevesoSeules] = useState(false);
 
   const rangees = useMemo(() => {
     const r = recherche.trim().toLowerCase();
@@ -27,6 +29,8 @@ export default function LignesTable({ onOuvrir }: Props) {
         const s = suivi(l.id);
         if (statutsActifs.length && !statutsActifs.includes(s.statut)) return false;
         if (aIdentifierSeules && !l.aIdentifier) return false;
+        if (aggloSeules && !l.agglo) return false;
+        if (sevesoSeules && !l.seveso?.length) return false;
         if (!r) return true;
         return (
           nomAffiche(l, s).toLowerCase().includes(r) ||
@@ -56,7 +60,17 @@ export default function LignesTable({ onOuvrir }: Props) {
             return sens * nomAffiche(x.l, x.s).localeCompare(nomAffiche(y.l, y.s), 'fr');
         }
       });
-  }, [lignes, suivi, recherche, tensionsActives, statutsActifs, tri, aIdentifierSeules]);
+  }, [
+    lignes,
+    suivi,
+    recherche,
+    tensionsActives,
+    statutsActifs,
+    tri,
+    aIdentifierSeules,
+    aggloSeules,
+    sevesoSeules,
+  ]);
 
   const totaux = useMemo(() => {
     const t = { perimetre: 0, faits: 0, restants: 0, lignes: rangees.length, terminees: 0 };
@@ -130,7 +144,26 @@ export default function LignesTable({ onOuvrir }: Props) {
         >
           À identifier
         </button>
+        <button
+          className={aggloSeules ? 'puce active puce-agglo' : 'puce puce-agglo'}
+          title="Ouvrages traversant une agglomération"
+          onClick={() => setAggloSeules((v) => !v)}
+        >
+          Agglomération
+        </button>
+        <button
+          className={sevesoSeules ? 'puce active puce-sev' : 'puce puce-sev'}
+          title="Ouvrages passant à moins de 2 km d'un site Seveso"
+          onClick={() => setSevesoSeules((v) => !v)}
+        >
+          Seveso
+        </button>
       </div>
+
+      <p className="legende">
+        <span className="pastille-agglo" /> traverse une agglomération —{' '}
+        <b>bi-turbine obligatoire</b> pour le survol.
+      </p>
 
       <div className="synthese">
         <div>
@@ -169,13 +202,25 @@ export default function LignesTable({ onOuvrir }: Props) {
               <tr
                 key={l.id}
                 className={
-                  (ligneActive === l.id ? 'active ' : '') + `statut-${s.statut}`
+                  (ligneActive === l.id ? 'active ' : '') +
+                  (l.agglo ? 'agglo ' : '') +
+                  `statut-${s.statut}`
                 }
                 onClick={() => onOuvrir(l)}
               >
                 <td className="col-nom">
                   <span className="pastille-tension" style={{ background: couleur(l.tension) }} />
                   <span className="nom">{nomAffiche(l, s)}</span>
+                  {l.seveso?.length && (
+                    <span
+                      className="marque-seveso"
+                      title={l.seveso
+                        .map((x) => `${x.n} — seuil ${x.t} — ${x.d} km`)
+                        .join('\n')}
+                    >
+                      ⬤
+                    </span>
+                  )}
                   {codeAffiche(l, s) && <code className="code-rte">{codeAffiche(l, s)}</code>}
                 </td>
                 <td className="num">{l.tension}</td>

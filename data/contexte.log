@@ -1,0 +1,35 @@
+→ Sites Seveso (Géorisques)…
+    seveso : 1302/1302
+  ✓ 1302 établissements
+→ Zones urbanisées (Corine Land Cover 2018, classes 111 et 112)…
+    agglos : 1000/27392
+    agglos : 2000/27392
+    agglos : 3000/27392
+    agglos : 4000/27392
+    agglos : 5000/27392
+    agglos : 6000/27392
+    agglos : 7000/27392
+    agglos : 8000/27392
+    agglos : 9000/27392
+    agglos : 10000/27392
+    agglos : 11000/27392
+    agglos : 12000/27392
+    agglos : 13000/27392
+    agglos : 14000/27392
+    agglos : 15000/27392
+    agglos : 16000/27392
+    agglos : 17000/27392
+    agglos : 18000/27392
+    agglos : 19000/27392
+    agglos : 20000/27392
+    agglos : 21000/27392
+    agglos : 22000/27392
+    agglos : 23000/27392
+    agglos : 24000/27392
+    agglos : 25000/27392
+    agglos : 26000/27392
+    agglos : 27000/27392
+    agglos : 27392/27392
+  ✓ 27392 zones urbanisées
+
+✓ Terminé. Étape suivante : npm run data:build

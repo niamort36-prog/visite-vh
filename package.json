@@ -10,8 +10,9 @@
     "preview": "vite preview",
     "data:fetch": "node scripts/fetch-osm.mjs",
     "data:build": "node scripts/build-dataset.mjs",
-    "data:all": "npm run data:fetch && npm run data:build",
-    "data:icons": "node scripts/make-icons.mjs"
+    "data:all": "npm run data:fetch && npm run data:contexte && npm run data:build",
+    "data:icons": "node scripts/make-icons.mjs",
+    "data:contexte": "node scripts/fetch-contexte.mjs"
   },
   "dependencies": {
     "leaflet": "^1.9.4",
