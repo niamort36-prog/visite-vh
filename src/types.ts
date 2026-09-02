@@ -1,0 +1,138 @@
+/** Modèle de données partagé entre le pipeline (scripts/) et l'application. */
+
+export type Tension = 63 | 90 | 150 | 225 | 400;
+
+/** Un support (pylône) le long d'une ligne. */
+export interface Pylone {
+  /** rang du pylône sur la ligne, à partir de l'extrémité A (1-based) */
+  i: number;
+  /** numéro officiel quand il est connu, sinon le rang formaté */
+  num: string;
+  /** true si le numéro vient d'une source de terrain (OSM `ref`) et non du rang calculé */
+  numReel: boolean;
+  lat: number;
+  lon: number;
+  /** distance cumulée depuis l'extrémité A, en km */
+  d: number;
+}
+
+export interface Ligne {
+  id: string;
+  /** libellé lisible : « AVOINE - DISTRÉ » */
+  nom: string;
+  /** code d'ouvrage RTE quand l'appariement a réussi (ex. AVOIN L41 DISTR) */
+  codeRte?: string;
+  /** libellé officiel ODRE quand il est connu */
+  nomRte?: string;
+  /** codes d'ouvrage possibles lorsque l'appariement reste ambigu (plusieurs circuits) */
+  candidatsRte?: string[];
+  /** aucune extrémité nommée dans OSM : l'ouvrage reste à rattacher par l'exploitant */
+  aIdentifier?: boolean;
+  tension: Tension;
+  operateur: string;
+  nbCircuits?: number;
+  /** longueur totale en km */
+  km: number;
+  nbPylones: number;
+  /** codes départements traversés */
+  depts: string[];
+  /** noms des postes d'extrémité, quand ils sont identifiés */
+  extremites: [string, string];
+  /** tracé (lat, lon) pour l'affichage */
+  geom: [number, number][];
+  pylones: Pylone[];
+}
+
+export interface Poste {
+  id: string;
+  nom: string;
+  code?: string;
+  tension: number;
+  operateur: string;
+  fonction?: string;
+  lat: number;
+  lon: number;
+}
+
+export interface JeuDepartement {
+  code: string;
+  nom: string;
+  lignes: Ligne[];
+  postes: Poste[];
+}
+
+export interface EntreeIndex {
+  code: string;
+  nom: string;
+  region?: string;
+  nbLignes: number;
+  nbPylones: number;
+  nbPostes: number;
+  km: number;
+  /** taille du fichier en octets, pour annoncer le poids du téléchargement hors-ligne */
+  taille: number;
+  /** emprise [sud, ouest, nord, est] */
+  bbox: [number, number, number, number];
+}
+
+export interface IndexReseau {
+  genereLe: string;
+  version: number;
+  departements: EntreeIndex[];
+}
+
+/* ------------------------------------------------------------------ */
+/* Suivi des visites — données saisies par l'utilisateur                */
+/* ------------------------------------------------------------------ */
+
+export type StatutLigne = 'a_faire' | 'en_cours' | 'fait' | 'hors_perimetre';
+
+export interface Observation {
+  id: string;
+  ligneId: string;
+  /** rang du pylône concerné */
+  pyloneI: number;
+  pyloneNum: string;
+  date: string;
+  gravite: 1 | 2 | 3;
+  texte: string;
+}
+
+export interface SuiviLigne {
+  ligneId: string;
+  statut: StatutLigne;
+  /** pylône frontière de début (rang) — début du périmètre à visiter */
+  debut?: number;
+  /** pylône frontière de fin (rang) */
+  fin?: number;
+  /** rang du dernier pylône effectivement survolé */
+  avancement?: number;
+  dateDebut?: string;
+  dateFin?: string;
+  /** date de la dernière mise à jour de l'avancement */
+  dateMaj?: string;
+  note?: string;
+  /** libellé saisi par l'exploitant, prioritaire sur le nom reconstitué */
+  nomPerso?: string;
+  /** ouvrage RTE rattaché à la main depuis le catalogue officiel */
+  codeRtePerso?: string;
+  nomRtePerso?: string;
+}
+
+export interface Campagne {
+  id: string;
+  nom: string;
+  annee: number;
+  creeLe: string;
+  /** départements chargés dans cette campagne */
+  depts: string[];
+}
+
+export interface Sauvegarde {
+  format: 'visite-vh';
+  version: number;
+  exporteLe: string;
+  campagnes: Campagne[];
+  suivis: Record<string, SuiviLigne[]>;
+  observations: Record<string, Observation[]>;
+}

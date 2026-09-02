@@ -1,0 +1,10 @@
+node_modules/
+dist/
+dev-dist/
+*.local
+.DS_Store
+Thumbs.db
+
+# Données brutes OpenStreetMap : volumineuses et régénérables (npm run data:fetch)
+data/raw/
+data/fetch.log
