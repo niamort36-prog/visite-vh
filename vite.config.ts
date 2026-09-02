@@ -41,7 +41,20 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/data\//],
         runtimeCaching: [
           {
-            // données réseau : une fois téléchargées, elles ne changent qu'au rebuild
+            // L'index porte la version du jeu de données : il doit venir du réseau
+            // quand c'est possible, sinon rien ne signalerait une mise à jour.
+            urlPattern: ({ url }) => url.pathname.endsWith('/data/index.json'),
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'reseau-htb-index',
+              networkTimeoutSeconds: 5,
+              expiration: { maxEntries: 4, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            // données réseau : figées pour une version donnée, d'où l'estampille
+            // « ?v= » qui garantit qu'une régénération produit de nouvelles URL
             urlPattern: ({ url }) => url.pathname.includes('/data/'),
             handler: 'CacheFirst',
             options: {
