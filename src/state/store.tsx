@@ -8,6 +8,7 @@ import React, {
   useState,
 } from 'react';
 import type {
+  AvancementVisite,
   Campagne,
   ContactSeveso,
   Creneau,
@@ -19,12 +20,14 @@ import type {
   Observation,
   Poste,
   Preparation,
+  NatureVisite,
   Sauvegarde,
+  StatutLigne,
   SuiviLigne,
   TypeVol,
   VolLigne,
 } from '../types';
-import { vitesseParDefaut } from '../lib/vols';
+import { natureDuTypeVol, vitesseParDefaut } from '../lib/vols';
 import { chargerDept, chargerIndex } from '../data/reseau';
 
 const CLE = 'visite-vh:v1';
@@ -62,6 +65,51 @@ function campagneParDefaut(): Campagne {
   };
 }
 
+/** Avancement vierge. */
+function visiteVide(): AvancementVisite {
+  return { statut: 'a_faire' };
+}
+
+export function suiviVide(ligneId: string): SuiviLigne {
+  return {
+    ligneId,
+    visites: { VH: visiteVide(), VTIR: visiteVide(), LIDAR: visiteVide() },
+  };
+}
+
+/**
+ * Les suivis enregistrés avant la séparation par nature portaient un unique
+ * avancement : il correspondait aux visites héliportées, on le reverse dans VH.
+ */
+function migrerSuivi(brut: unknown): SuiviLigne {
+  const b = brut as Record<string, unknown>;
+  if (b.visites) return b as unknown as SuiviLigne;
+  const { statut, avancement, dateDebut, dateFin, dateMaj, ...reste } = b;
+  return {
+    ...(reste as unknown as Omit<SuiviLigne, 'visites'>),
+    visites: {
+      VH: {
+        statut: (statut as StatutLigne) ?? 'a_faire',
+        avancement: avancement as number | undefined,
+        dateDebut: dateDebut as string | undefined,
+        dateFin: dateFin as string | undefined,
+        dateMaj: dateMaj as string | undefined,
+      },
+      VTIR: visiteVide(),
+      LIDAR: visiteVide(),
+    },
+  };
+}
+
+function migrerSuivis(
+  suivis: Record<string, SuiviLigne[]>,
+): Record<string, SuiviLigne[]> {
+  const out: Record<string, SuiviLigne[]> = {};
+  for (const [cid, liste] of Object.entries(suivis ?? {}))
+    out[cid] = (liste ?? []).map((x) => migrerSuivi(x));
+  return out;
+}
+
 function lire(): Persiste {
   try {
     const brut = localStorage.getItem(CLE);
@@ -71,6 +119,7 @@ function lire(): Persiste {
       if (p.campagnes?.length)
         return {
           ...p,
+          suivis: migrerSuivis(p.suivis),
           preparations: p.preparations ?? {},
           helicopteres: p.helicopteres ?? [],
           contactsSeveso: p.contactsSeveso ?? {},
@@ -116,6 +165,11 @@ interface Ctx {
 
   suivi: (ligneId: string) => SuiviLigne;
   majSuivi: (ligneId: string, patch: Partial<SuiviLigne>) => void;
+  /** met à jour l'avancement d'une ligne pour une nature de visite */
+  majVisite: (ligneId: string, nature: NatureVisite, patch: Partial<AvancementVisite>) => void;
+  /** nature de visite que les actions de saisie alimentent */
+  natureCourante: NatureVisite;
+  setNatureCourante: (n: NatureVisite) => void;
   observations: Observation[];
   ajouterObservation: (o: Omit<Observation, 'id'>) => void;
   supprimerObservation: (id: string) => void;
@@ -193,6 +247,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [chargement, setChargement] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [ligneActive, setLigneActive] = useState<string | null>(null);
+  const [natureCourante, setNatureCourante] = useState<NatureVisite>('VH');
   const compteur = useRef(0);
 
   // persistance
@@ -255,8 +310,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [suivisCampagne]);
 
   const suivi = useCallback(
-    (ligneId: string): SuiviLigne =>
-      parLigne.get(ligneId) ?? { ligneId, statut: 'a_faire' },
+    (ligneId: string): SuiviLigne => parLigne.get(ligneId) ?? suiviVide(ligneId),
     [parLigne],
   );
 
@@ -265,12 +319,37 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const cid = s.campagneCourante;
       const liste = s.suivis[cid] ?? [];
       const idx = liste.findIndex((x) => x.ligneId === ligneId);
-      const base: SuiviLigne = idx >= 0 ? liste[idx] : { ligneId, statut: 'a_faire' };
-      const maj: SuiviLigne = { ...base, ...patch, dateMaj: new Date().toISOString() };
+      const base: SuiviLigne = idx >= 0 ? liste[idx] : suiviVide(ligneId);
+      const maj: SuiviLigne = { ...base, ...patch };
       const nouvelle = idx >= 0 ? liste.map((x, i) => (i === idx ? maj : x)) : [...liste, maj];
       return { ...s, suivis: { ...s.suivis, [cid]: nouvelle } };
     });
   }, []);
+
+  const majVisite = useCallback(
+    (ligneId: string, nature: NatureVisite, patch: Partial<AvancementVisite>) => {
+      setEtat((s) => {
+        const cid = s.campagneCourante;
+        const liste = s.suivis[cid] ?? [];
+        const idx = liste.findIndex((x) => x.ligneId === ligneId);
+        const base: SuiviLigne = idx >= 0 ? liste[idx] : suiviVide(ligneId);
+        const maj: SuiviLigne = {
+          ...base,
+          visites: {
+            ...base.visites,
+            [nature]: {
+              ...base.visites[nature],
+              ...patch,
+              dateMaj: new Date().toISOString(),
+            },
+          },
+        };
+        const nouvelle = idx >= 0 ? liste.map((x, i) => (i === idx ? maj : x)) : [...liste, maj];
+        return { ...s, suivis: { ...s.suivis, [cid]: nouvelle } };
+      });
+    },
+    [],
+  );
 
   const ajouterObservation = useCallback((o: Omit<Observation, 'id'>) => {
     setEtat((s) => {
@@ -559,7 +638,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       return {
         ...cur,
         campagnes: [...parId.values()],
-        suivis: { ...cur.suivis, ...s.suivis },
+        suivis: { ...cur.suivis, ...migrerSuivis(s.suivis) },
         observations: { ...cur.observations, ...s.observations },
         preparations: { ...cur.preparations, ...(s.preparations ?? {}) },
         helicopteres: fusionnerHelicos(cur.helicopteres, s.helicopteres ?? []),
@@ -587,6 +666,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     majCampagne,
     suivi,
     majSuivi,
+    majVisite,
+    natureCourante,
+    setNatureCourante,
     observations: obsCampagne,
     ajouterObservation,
     supprimerObservation,
@@ -638,8 +720,13 @@ export interface Avancement {
   pourcent: number;
 }
 
-export function calculerAvancement(ligne: Ligne, s: SuiviLigne): Avancement {
+export function calculerAvancement(
+  ligne: Ligne,
+  s: SuiviLigne,
+  nature: NatureVisite = 'VH',
+): Avancement {
   const n = ligne.pylones.length;
+  const v = s.visites[nature];
   const debut = Math.min(Math.max(s.debut ?? 1, 1), n);
   const fin = Math.min(Math.max(s.fin ?? n, debut), n);
   const dDebut = ligne.pylones[debut - 1]?.d ?? 0;
@@ -647,9 +734,9 @@ export function calculerAvancement(ligne: Ligne, s: SuiviLigne): Avancement {
   const kmPerimetre = Math.max(dFin - dDebut, 0);
 
   let kmFaits = 0;
-  if (s.statut === 'fait') kmFaits = kmPerimetre;
-  else if (s.avancement != null) {
-    const a = Math.min(Math.max(s.avancement, debut), fin);
+  if (v.statut === 'fait') kmFaits = kmPerimetre;
+  else if (v.avancement != null) {
+    const a = Math.min(Math.max(v.avancement, debut), fin);
     kmFaits = Math.max((ligne.pylones[a - 1]?.d ?? dDebut) - dDebut, 0);
   }
 
@@ -663,14 +750,17 @@ export function calculerAvancement(ligne: Ligne, s: SuiviLigne): Avancement {
   };
 }
 
-/** Libellé à afficher : celui saisi par l'exploitant prime sur le nom reconstitué. */
-export function nomAffiche(l: Ligne, s: SuiviLigne): string {
-  return s.nomPerso?.trim() || l.nom;
-}
-
-/** Code d'ouvrage RTE retenu : rattachement manuel prioritaire sur l'appariement automatique. */
-export function codeAffiche(l: Ligne, s: SuiviLigne): string | undefined {
-  return s.codeRtePerso || l.codeRte;
+/** Rang du dernier pylône survolé pour une nature, borné au périmètre. */
+export function dernierPyloneFait(
+  ligne: Ligne,
+  s: SuiviLigne,
+  nature: NatureVisite,
+): number | null {
+  const v = s.visites[nature];
+  const a = calculerAvancement(ligne, s, nature);
+  if (v.statut === 'fait') return a.fin;
+  if (v.avancement == null) return null;
+  return Math.min(Math.max(v.avancement, a.debut), a.fin);
 }
 
 /**
@@ -687,6 +777,16 @@ export function volDepuisLigne(l: Ligne, s: SuiviLigne): Omit<VolLigne, 'id'> {
     tension: l.tension,
     km: Math.round(km * 10) / 10,
   };
+}
+
+/** Libellé à afficher : celui saisi par l'exploitant prime sur le nom reconstitué. */
+export function nomAffiche(l: Ligne, s: SuiviLigne): string {
+  return s.nomPerso?.trim() || l.nom;
+}
+
+/** Code d'ouvrage RTE retenu : rattachement manuel prioritaire sur l'appariement automatique. */
+export function codeAffiche(l: Ligne, s: SuiviLigne): string | undefined {
+  return s.codeRtePerso || l.codeRte;
 }
 
 export interface EtatAgglo {

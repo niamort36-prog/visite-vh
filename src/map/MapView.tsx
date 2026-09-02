@@ -2,7 +2,13 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { Ligne, Poste, Pylone } from '../types';
-import { calculerAvancement, codeAffiche, nomAffiche, useStore } from '../state/store';
+import {
+  calculerAvancement,
+  codeAffiche,
+  dernierPyloneFait,
+  nomAffiche,
+  useStore,
+} from '../state/store';
 import { couleur, epaisseur } from '../lib/tensions';
 
 import {
@@ -135,6 +141,14 @@ export default function MapView({
   }, []);
 
   /* ---- tracé des lignes ------------------------------------------ */
+  /**
+   * Chaque nature de visite se lit différemment sur la carte :
+   *  - VH : la portion survolée passe en vert clair translucide, si bien que
+   *    seule la portion restant à faire garde la couleur de tension ;
+   *  - VTIR : la portion survolée est doublée — un trait épais coloré surmonté
+   *    d'un trait clair, ce qui donne deux lignes parallèles ;
+   *  - LiDAR : rien n'est tracé, l'avancement se lit dans la liste des lignes.
+   */
   useEffect(() => {
     const g = coucheLignes.current;
     if (!g) return;
@@ -142,19 +156,44 @@ export default function MapView({
 
     for (const l of lignes) {
       const s = suivi(l.id);
-      const av = calculerAvancement(l, s);
+      const vh = s.visites.VH;
       const actif = ligneActive === l.id;
 
-      // halo de sélection
       if (actif) {
-        L.polyline(l.geom, { color: '#111827', weight: epaisseur(l.tension) + 6, opacity: 0.35 }).addTo(g);
+        L.polyline(l.geom, {
+          color: '#111827',
+          weight: epaisseur(l.tension) + 6,
+          opacity: 0.35,
+        }).addTo(g);
       }
 
+      /** Points du tracé entre le début du périmètre et un rang donné. */
+      const portion = (jusqua: number | null) => {
+        if (jusqua == null) return [];
+        const a = calculerAvancement(l, s);
+        return l.pylones
+          .filter((p) => p.i >= a.debut && p.i <= jusqua)
+          .map((p) => [p.lat, p.lon] as [number, number]);
+      };
+      const ptsVh = portion(dernierPyloneFait(l, s, 'VH'));
+      const ptsVtir = portion(dernierPyloneFait(l, s, 'VTIR'));
+      const horsPerimetre = vh.statut === 'hors_perimetre';
+
+      // 1. VTIR : trait large posé sous la ligne, dont les bords resteront visibles
+      if (ptsVtir.length > 1 && !horsPerimetre) {
+        L.polyline(ptsVtir, {
+          color: couleur(l.tension),
+          weight: epaisseur(l.tension) + 6,
+          opacity: 0.95,
+        }).addTo(g);
+      }
+
+      // 2. la ligne elle-même
       const trace = L.polyline(l.geom, {
         color: couleur(l.tension),
         weight: epaisseur(l.tension) + (actif ? 1.5 : 0),
-        opacity: s.statut === 'hors_perimetre' ? 0.3 : 0.9,
-        dashArray: s.statut === 'hors_perimetre' ? '4 6' : undefined,
+        opacity: horsPerimetre ? 0.3 : 0.9,
+        dashArray: horsPerimetre ? '4 6' : undefined,
       });
       trace.on('click', () => {
         setLigneActive(l.id);
@@ -168,19 +207,26 @@ export default function MapView({
       );
       trace.addTo(g);
 
-      // portion réalisée, superposée en vert
-      if (av.kmFaits > 0 && s.statut !== 'hors_perimetre') {
-        const iFin = s.statut === 'fait' ? av.fin : Math.min(s.avancement ?? av.debut, av.fin);
-        const pts = l.pylones
-          .filter((p) => p.i >= av.debut && p.i <= iFin)
-          .map((p) => [p.lat, p.lon] as [number, number]);
-        if (pts.length > 1) {
-          L.polyline(pts, {
-            color: '#16a34a',
-            weight: epaisseur(l.tension) + 3,
-            opacity: 0.85,
-          }).addTo(g);
-        }
+      if (horsPerimetre) continue;
+
+      // 3. cœur clair : évidé, le trait large du VTIR se lit comme deux lignes
+      if (ptsVtir.length > 1) {
+        L.polyline(ptsVtir, {
+          color: '#ffffff',
+          weight: epaisseur(l.tension) + 1.5,
+          opacity: 1,
+        }).addTo(g);
+      }
+
+      // 4. VH : ce qui est survolé s'efface en vert clair, moins large que le
+      //    trait VTIR pour que les deux informations cohabitent
+      if (ptsVh.length > 1) {
+        L.polyline(ptsVh, {
+          color: '#86efac',
+          weight: epaisseur(l.tension) + 2.5,
+          opacity: 0.8,
+          lineCap: 'round',
+        }).addTo(g);
       }
     }
   }, [lignes, suivi, ligneActive, setLigneActive]);
@@ -258,8 +304,9 @@ export default function MapView({
       const s = suivi(l.id);
       const av = calculerAvancement(l, s);
       const frontiere = p.i === s.debut || p.i === s.fin;
-      const fait =
-        s.statut === 'fait' || (s.avancement != null && p.i >= av.debut && p.i <= s.avancement);
+      // l'état d'un pylône reflète la visite héliportée, seule à porter l'avancement
+      const dernier = dernierPyloneFait(l, s, 'VH');
+      const fait = dernier != null && p.i >= av.debut && p.i <= dernier;
       const hors = p.i < av.debut || p.i > av.fin;
 
       const m = L.circleMarker([p.lat, p.lon], {

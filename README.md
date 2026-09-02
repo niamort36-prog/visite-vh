@@ -16,8 +16,19 @@ compte, et reste utilisable **hors connexion** une fois le secteur chargé.
   kilomètres faits et restants, pourcentage d'avancement et date de dernière mise à jour.
 - **Pylônes frontières** : bornes du tronçon dont vous avez la charge, définies au clic sur
   la carte ou dans la liste.
-- **Suivi de l'avancement** : le dernier pylône survolé fixe la progression ; les kilomètres
-  et les dates se calculent seuls, et la portion réalisée apparaît en vert sur la carte.
+- **Suivi de l'avancement, par nature de visite** : une même ligne se suit séparément en
+  **VH** (mono et bi-turbine confondues), en **VTIR** et en **LiDAR**. Le dernier pylône
+  survolé fixe la progression, les kilomètres et les dates se calculent seuls, et chaque
+  nature se lit différemment sur la carte :
+
+  | Nature | Sur la carte | Kilométrage |
+  | --- | --- | --- |
+  | VH mono / bi-turbine | la portion survolée passe en **vert clair translucide**, si bien que seule la zone restant à faire garde la couleur de tension | **compté** |
+  | VTIR | la portion survolée est **doublée** : un trait large surmonté d'un trait clair, qui se lit comme deux lignes parallèles | non compté |
+  | Vol dédié LiDAR | **rien n'est tracé** ; l'avancement se lit en repère dans la liste des lignes, la zone survolée au survol du repère et dans le panneau *Ouvrage* | non compté |
+
+  Les colonnes *Faits*, *Reste* et *%* du tableau ne portent donc que sur les visites
+  héliportées ; VTIR et LiDAR apparaissent en repère à côté du nom de la ligne.
 - **Observations** géolocalisées au pylône, avec niveau de gravité.
 - **Préparations de vol** : au sein d'une campagne, une préparation par semaine (S24…) et
   par type de vol (VH mono-turbine, VH bi-turbines, VTIR, vol dédié LiDAR). On y renseigne

@@ -91,6 +91,12 @@ export interface IndexReseau {
 
 export type StatutLigne = 'a_faire' | 'en_cours' | 'fait' | 'hors_perimetre';
 
+/**
+ * Nature d'une visite. Les vols en mono et en bi-turbine relèvent tous deux de la
+ * visite héliportée : c'est le même travail, avec le même avancement.
+ */
+export type NatureVisite = 'VH' | 'VTIR' | 'LIDAR';
+
 export interface Observation {
   id: string;
   ligneId: string;
@@ -102,25 +108,35 @@ export interface Observation {
   texte: string;
 }
 
-export interface SuiviLigne {
-  ligneId: string;
+/**
+ * Avancement d'une ligne pour une nature de visite donnée. Une même ligne peut
+ * être survolée en VH, en VTIR et en LiDAR à des dates différentes, chacune avec
+ * sa propre progression.
+ */
+export interface AvancementVisite {
   statut: StatutLigne;
-  /** pylône frontière de début (rang) — début du périmètre à visiter */
-  debut?: number;
-  /** pylône frontière de fin (rang) */
-  fin?: number;
   /** rang du dernier pylône effectivement survolé */
   avancement?: number;
   dateDebut?: string;
   dateFin?: string;
   /** date de la dernière mise à jour de l'avancement */
   dateMaj?: string;
+}
+
+export interface SuiviLigne {
+  ligneId: string;
+  /** pylône frontière de début (rang) — commun à toutes les natures de visite */
+  debut?: number;
+  /** pylône frontière de fin (rang) */
+  fin?: number;
   note?: string;
   /** libellé saisi par l'exploitant, prioritaire sur le nom reconstitué */
   nomPerso?: string;
   /** ouvrage RTE rattaché à la main depuis le catalogue officiel */
   codeRtePerso?: string;
   nomRtePerso?: string;
+  /** progression par nature de visite */
+  visites: Record<NatureVisite, AvancementVisite>;
 }
 
 export interface Campagne {

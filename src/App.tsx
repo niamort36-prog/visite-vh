@@ -10,6 +10,7 @@ import TachesFenetre from './ui/TachesFenetre';
 import { useTaches } from './state/useTaches';
 import { joursAvant } from './lib/semaines';
 import { nomAffiche, useStore } from './state/store';
+import { NATURES } from './lib/vols';
 import type { DemiJournee, Ligne, Pylone } from './types';
 import { volDepuisLigne } from './state/store';
 import { aujourdhui } from './lib/geo';
@@ -31,6 +32,8 @@ export default function App() {
     setLigneActive,
     erreur,
     majSuivi,
+    majVisite,
+    natureCourante,
     suivi,
     ajouterObservation,
     preparations,
@@ -278,16 +281,21 @@ export default function App() {
             <button
               className="principal"
               onClick={() => {
-                const s = suivi(actionPylone.ligne.id);
-                majSuivi(actionPylone.ligne.id, {
+                const v = suivi(actionPylone.ligne.id).visites[natureCourante];
+                majVisite(actionPylone.ligne.id, natureCourante, {
                   avancement: actionPylone.pylone.i,
-                  statut: s.statut === 'a_faire' ? 'en_cours' : s.statut,
-                  dateDebut: s.dateDebut ?? aujourdhui(),
+                  statut: v.statut === 'a_faire' ? 'en_cours' : v.statut,
+                  dateDebut: v.dateDebut ?? aujourdhui(),
                 });
                 setActionPylone(null);
               }}
+              title={`Enregistré sur le suivi ${natureCourante}`}
             >
               Fait jusqu'ici
+              <small>
+                {' '}
+                {NATURES.find((n) => n.cle === natureCourante)?.court}
+              </small>
             </button>
             <button
               onClick={() => {

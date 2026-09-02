@@ -1,4 +1,4 @@
-import type { TypeVol } from '../types';
+import type { NatureVisite, TypeVol } from '../types';
 
 /**
  * Types de vol et vitesse moyenne de progression retenue par défaut.
@@ -39,4 +39,22 @@ export function libelleDuree(min: number): string {
   const h = Math.floor(min / 60);
   const m = min % 60;
   return m ? `${h} h ${String(m).padStart(2, '0')}` : `${h} h`;
+}
+
+/** Natures de visite suivies séparément sur une ligne. */
+export const NATURES: { cle: NatureVisite; nom: string; court: string }[] = [
+  { cle: 'VH', nom: 'Visite héliportée', court: 'VH' },
+  { cle: 'VTIR', nom: 'VTIR', court: 'VTIR' },
+  { cle: 'LIDAR', nom: 'Vol dédié LiDAR', court: 'LiDAR' },
+];
+
+export function nomNature(n: NatureVisite): string {
+  return NATURES.find((x) => x.cle === n)?.nom ?? n;
+}
+
+/** Mono et bi-turbine relèvent de la même nature de visite. */
+export function natureDuTypeVol(t: TypeVol): NatureVisite {
+  if (t === 'VTIR') return 'VTIR';
+  if (t === 'LIDAR') return 'LIDAR';
+  return 'VH';
 }

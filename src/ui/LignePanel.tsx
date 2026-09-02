@@ -1,7 +1,15 @@
 import { useMemo, useState } from 'react';
-import type { Ligne, StatutLigne, SuiviLigne } from '../types';
-import { calculerAvancement, codeAffiche, etatAgglo, nomAffiche, useStore } from '../state/store';
+import type { Ligne, StatutLigne } from '../types';
+import {
+  calculerAvancement,
+  codeAffiche,
+  dernierPyloneFait,
+  etatAgglo,
+  nomAffiche,
+  useStore,
+} from '../state/store';
 import { couleur, LIBELLE_STATUT } from '../lib/tensions';
+import { NATURES, nomNature } from '../lib/vols';
 import { aujourdhui, dateCourte, km } from '../lib/geo';
 import RattacherOuvrage from './RattacherOuvrage';
 import { SevesoDetail } from './SevesoCellule';
@@ -20,9 +28,14 @@ export default function LignePanel({ ligne, onCadrerPylone }: Props) {
     supprimerObservation,
     aggloManuel,
     setAggloManuel,
+    majVisite,
+    natureCourante,
+    setNatureCourante,
   } = useStore();
   const s = suivi(ligne.id);
-  const a = calculerAvancement(ligne, s);
+  const nature = natureCourante;
+  const v = s.visites[nature];
+  const a = calculerAvancement(ligne, s, nature);
   const [filtrePylone, setFiltrePylone] = useState('');
   const [nouvelleObs, setNouvelleObs] = useState<{ i: number; gravite: 1 | 2 | 3; texte: string } | null>(
     null,
@@ -40,18 +53,18 @@ export default function LignePanel({ ligne, onCadrerPylone }: Props) {
   }, [ligne.pylones, filtrePylone]);
 
   const changerStatut = (statut: StatutLigne) => {
-    const patch: Partial<SuiviLigne> = { statut };
+    const patch: Partial<typeof v> = { statut };
     if (statut === 'fait') {
       patch.avancement = a.fin;
-      patch.dateFin = s.dateFin ?? aujourdhui();
-      patch.dateDebut = s.dateDebut ?? aujourdhui();
+      patch.dateFin = v.dateFin ?? aujourdhui();
+      patch.dateDebut = v.dateDebut ?? aujourdhui();
     } else if (statut === 'en_cours') {
-      patch.dateDebut = s.dateDebut ?? aujourdhui();
+      patch.dateDebut = v.dateDebut ?? aujourdhui();
     } else if (statut === 'a_faire') {
       patch.avancement = undefined;
       patch.dateFin = undefined;
     }
-    majSuivi(ligne.id, patch);
+    majVisite(ligne.id, nature, patch);
   };
 
   return (
@@ -116,12 +129,39 @@ export default function LignePanel({ ligne, onCadrerPylone }: Props) {
       })()}
       {!!ligne.seveso?.length && <SevesoDetail sites={ligne.seveso} />}
 
-      <div className="bloc-titre">Statut</div>
+      <div className="bloc-titre">
+        Suivi de la visite
+        <span className="compteur">{nomNature(nature)}</span>
+      </div>
+      <div className="onglets-nature">
+        {NATURES.map((n) => {
+          const av = calculerAvancement(ligne, s, n.cle);
+          const st = s.visites[n.cle].statut;
+          return (
+            <button
+              key={n.cle}
+              className={n.cle === nature ? 'nature actif' : 'nature'}
+              onClick={() => setNatureCourante(n.cle)}
+              title={nomNature(n.cle)}
+            >
+              {n.court}
+              <small>
+                {st === 'hors_perimetre' ? 'hors périm.' : `${Math.round(av.pourcent)} %`}
+              </small>
+            </button>
+          );
+        })}
+      </div>
+      <p className="aide">
+        L'avancement en kilomètres du tableau des lignes ne compte que les visites
+        héliportées ; VTIR et LiDAR se suivent séparément.
+      </p>
+
       <div className="ligne-boutons">
         {(['a_faire', 'en_cours', 'fait', 'hors_perimetre'] as StatutLigne[]).map((st) => (
           <button
             key={st}
-            className={s.statut === st ? 'bouton-statut actif' : 'bouton-statut'}
+            className={v.statut === st ? 'bouton-statut actif' : 'bouton-statut'}
             onClick={() => changerStatut(st)}
           >
             {LIBELLE_STATUT[st]}
@@ -173,18 +213,29 @@ export default function LignePanel({ ligne, onCadrerPylone }: Props) {
         <div className="avancement-chiffres">
           <b>{Math.round(a.pourcent)} %</b> · {km(a.kmFaits)} faits sur {km(a.kmPerimetre)} ·{' '}
           <span className="reste">{km(a.kmRestants)} restants</span>
+          {(() => {
+            const der = dernierPyloneFait(ligne, s, nature);
+            if (der == null) return null;
+            const pa = ligne.pylones.find((p) => p.i === a.debut)?.num ?? a.debut;
+            const pb = ligne.pylones.find((p) => p.i === der)?.num ?? der;
+            return (
+              <div>
+                Zone survolée : du pylône <b>{pa}</b> au pylône <b>{pb}</b>.
+              </div>
+            );
+          })()}
         </div>
       </div>
       <div className="grille2">
         <label>
           Dernier pylône survolé
           <select
-            value={s.avancement ?? ''}
+            value={v.avancement ?? ''}
             onChange={(e) =>
-              majSuivi(ligne.id, {
+              majVisite(ligne.id, nature, {
                 avancement: e.target.value ? Number(e.target.value) : undefined,
-                statut: s.statut === 'a_faire' ? 'en_cours' : s.statut,
-                dateDebut: s.dateDebut ?? aujourdhui(),
+                statut: v.statut === 'a_faire' ? 'en_cours' : v.statut,
+                dateDebut: v.dateDebut ?? aujourdhui(),
               })
             }
           >
@@ -203,16 +254,16 @@ export default function LignePanel({ ligne, onCadrerPylone }: Props) {
             Date de début
             <input
               type="date"
-              value={s.dateDebut ?? ''}
-              onChange={(e) => majSuivi(ligne.id, { dateDebut: e.target.value })}
+              value={v.dateDebut ?? ''}
+              onChange={(e) => majVisite(ligne.id, nature, { dateDebut: e.target.value })}
             />
           </label>
           <label>
             Date de fin
             <input
               type="date"
-              value={s.dateFin ?? ''}
-              onChange={(e) => majSuivi(ligne.id, { dateFin: e.target.value })}
+              value={v.dateFin ?? ''}
+              onChange={(e) => majVisite(ligne.id, nature, { dateFin: e.target.value })}
             />
           </label>
         </div>
@@ -307,7 +358,7 @@ export default function LignePanel({ ligne, onCadrerPylone }: Props) {
           </div>
         </div>
       ) : (
-        <button onClick={() => setNouvelleObs({ i: s.avancement ?? a.debut, gravite: 1, texte: '' })}>
+        <button onClick={() => setNouvelleObs({ i: v.avancement ?? a.debut, gravite: 1, texte: '' })}>
           + Ajouter une observation
         </button>
       )}
@@ -324,7 +375,8 @@ export default function LignePanel({ ligne, onCadrerPylone }: Props) {
       <div className="liste-pylones">
         {pylones.slice(0, 400).map((p) => {
           const hors = p.i < a.debut || p.i > a.fin;
-          const fait = s.statut === 'fait' || (s.avancement != null && p.i <= s.avancement && !hors);
+          const fait =
+            v.statut === 'fait' || (v.avancement != null && p.i <= v.avancement && !hors);
           return (
             <button
               key={p.i}

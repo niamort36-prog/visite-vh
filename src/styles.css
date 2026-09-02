@@ -1705,3 +1705,66 @@ th.col-agglo {
 .panneau .taches .tache {
   padding: 6px 8px;
 }
+
+/* ---------------------------------------------------------------- */
+/* Natures de visite : VH, VTIR, LiDAR                               */
+/* ---------------------------------------------------------------- */
+
+.onglets-nature {
+  display: flex;
+  gap: 4px;
+}
+.nature {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  border: 1px solid var(--bord);
+  background: #fff;
+  border-radius: var(--rayon);
+  padding: 4px 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--texte-doux);
+}
+.nature small {
+  font-weight: 400;
+  font-size: 10px;
+}
+.nature:hover {
+  border-color: var(--accent);
+}
+.nature.actif {
+  background: var(--marine);
+  border-color: var(--marine);
+  color: #fff;
+}
+
+/* Repères d'avancement VTIR et LiDAR dans la liste des lignes */
+.marque-nature {
+  margin-left: 5px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  border-radius: 7px;
+  padding: 0 5px;
+  vertical-align: 1px;
+  white-space: nowrap;
+}
+.marque-nature.n-VTIR {
+  background: #e0f2fe;
+  color: #075985;
+  border: 1px solid #7dd3fc;
+}
+.marque-nature.n-LIDAR {
+  background: #f3e8ff;
+  color: #6b21a8;
+  border: 1px solid #d8b4fe;
+}
+
+.feuille-action button small {
+  font-weight: 700;
+  opacity: 0.8;
+}

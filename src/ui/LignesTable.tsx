@@ -1,7 +1,15 @@
 import { useMemo, useState } from 'react';
 import type { Ligne, StatutLigne } from '../types';
-import { calculerAvancement, codeAffiche, etatAgglo, nomAffiche, useStore } from '../state/store';
+import {
+  calculerAvancement,
+  codeAffiche,
+  dernierPyloneFait,
+  etatAgglo,
+  nomAffiche,
+  useStore,
+} from '../state/store';
 import { couleur, LIBELLE_STATUT, TENSIONS } from '../lib/tensions';
+import { NATURES } from '../lib/vols';
 import { dateCourte, km } from '../lib/geo';
 
 type Colonne = 'nom' | 'tension' | 'km' | 'perimetre' | 'faits' | 'restants' | 'pourcent' | 'date';
@@ -27,7 +35,7 @@ export default function LignesTable({ onOuvrir }: Props) {
       .filter((l) => {
         if (tensionsActives.length && !tensionsActives.includes(l.tension)) return false;
         const s = suivi(l.id);
-        if (statutsActifs.length && !statutsActifs.includes(s.statut)) return false;
+        if (statutsActifs.length && !statutsActifs.includes(s.visites.VH.statut)) return false;
         if (aIdentifierSeules && !l.aIdentifier) return false;
         if (aggloSeules && !etatAgglo(l, aggloManuel).actif) return false;
         if (sevesoSeules && !l.seveso?.length) return false;
@@ -55,7 +63,12 @@ export default function LignesTable({ onOuvrir }: Props) {
           case 'pourcent':
             return sens * (x.a.pourcent - y.a.pourcent);
           case 'date':
-            return sens * String(x.s.dateMaj ?? '').localeCompare(String(y.s.dateMaj ?? ''));
+            return (
+              sens *
+              String(x.s.visites.VH.dateMaj ?? '').localeCompare(
+                String(y.s.visites.VH.dateMaj ?? ''),
+              )
+            );
           default:
             return sens * nomAffiche(x.l, x.s).localeCompare(nomAffiche(y.l, y.s), 'fr');
         }
@@ -76,11 +89,11 @@ export default function LignesTable({ onOuvrir }: Props) {
   const totaux = useMemo(() => {
     const t = { perimetre: 0, faits: 0, restants: 0, lignes: rangees.length, terminees: 0 };
     for (const { s, a } of rangees) {
-      if (s.statut === 'hors_perimetre') continue;
+      if (s.visites.VH.statut === 'hors_perimetre') continue;
       t.perimetre += a.kmPerimetre;
       t.faits += a.kmFaits;
       t.restants += a.kmRestants;
-      if (s.statut === 'fait') t.terminees++;
+      if (s.visites.VH.statut === 'fait') t.terminees++;
     }
     return t;
   }, [rangees]);
@@ -199,8 +212,8 @@ export default function LignesTable({ onOuvrir }: Props) {
               {entete('tension', 'kV')}
               {entete('km', 'Long.', 'Longueur totale de la ligne')}
               {entete('perimetre', 'Périm.', 'Longueur entre les pylônes frontières')}
-              {entete('faits', 'Faits')}
-              {entete('restants', 'Reste')}
+              {entete('faits', 'Faits', 'Kilomètres survolés en visite héliportée')}
+              {entete('restants', 'Reste', 'Kilomètres restant à survoler en visite héliportée')}
               {entete('pourcent', '%')}
               {entete('date', 'Maj')}
             </tr>
@@ -212,7 +225,7 @@ export default function LignesTable({ onOuvrir }: Props) {
                 className={
                   (ligneActive === l.id ? 'active ' : '') +
                   (etatAgglo(l, aggloManuel).actif ? 'agglo ' : '') +
-                  `statut-${s.statut}`
+                  `statut-${s.visites.VH.statut}`
                 }
                 onClick={() => onOuvrir(l)}
               >
@@ -229,6 +242,29 @@ export default function LignesTable({ onOuvrir }: Props) {
                       ⬤
                     </span>
                   )}
+                  {NATURES.filter((n) => n.cle !== 'VH').map((n) => {
+                    const av = calculerAvancement(l, s, n.cle);
+                    if (av.kmFaits <= 0) return null;
+                    return (
+                      <span
+                        key={n.cle}
+                        className={`marque-nature n-${n.cle}`}
+                        title={(() => {
+                          const der = dernierPyloneFait(l, s, n.cle);
+                          const a = l.pylones.find((p) => p.i === av.debut)?.num ?? av.debut;
+                          const b = l.pylones.find((p) => p.i === der)?.num ?? der;
+                          return (
+                            `${n.nom} : du pylône ${a} au pylône ${b}` +
+                            ` — ${av.kmFaits.toFixed(1).replace('.', ',')} km sur ` +
+                            `${av.kmPerimetre.toFixed(1).replace('.', ',')} km ` +
+                            `(${Math.round(av.pourcent)} %)`
+                          );
+                        })()}
+                      >
+                        {n.court} {Math.round(av.pourcent)} %
+                      </span>
+                    );
+                  })}
                   {codeAffiche(l, s) && <code className="code-rte">{codeAffiche(l, s)}</code>}
                 </td>
                 <td className="col-agglo" onClick={(e) => e.stopPropagation()}>
@@ -266,7 +302,7 @@ export default function LignesTable({ onOuvrir }: Props) {
                   </div>
                   {Math.round(a.pourcent)}
                 </td>
-                <td className="num date">{dateCourte(s.dateMaj)}</td>
+                <td className="num date">{dateCourte(s.visites.VH.dateMaj)}</td>
               </tr>
             ))}
           </tbody>
