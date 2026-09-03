@@ -28,11 +28,13 @@ export default function LignePanel({ ligne, onCadrerPylone }: Props) {
     supprimerObservation,
     aggloManuel,
     setAggloManuel,
+    rattachement,
     majVisite,
     natureCourante,
     setNatureCourante,
   } = useStore();
   const s = suivi(ligne.id);
+  const rat = rattachement(ligne.id);
   const nature = natureCourante;
   const v = s.visites[nature];
   const a = calculerAvancement(ligne, s, nature);
@@ -72,16 +74,23 @@ export default function LignePanel({ ligne, onCadrerPylone }: Props) {
       <div className="detail-entete">
         <span className="pastille-tension grosse" style={{ background: couleur(ligne.tension) }} />
         <div>
-          <h2>{nomAffiche(ligne, s)}</h2>
+          <h2>{nomAffiche(ligne, s, rat)}</h2>
           <div className="sous-titre">
             {ligne.tension} kV · {ligne.operateur} · {km(ligne.km)} · {ligne.nbPylones} pylônes
           </div>
-          {codeAffiche(ligne, s) && (
+          {codeAffiche(ligne, s, rat) && (
             <div className="sous-titre">
-              Ouvrage RTE <code>{codeAffiche(ligne, s)}</code>
+              Ouvrage RTE <code>{codeAffiche(ligne, s, rat)}</code>
             </div>
           )}
-          {!codeAffiche(ligne, s) && !!ligne.candidatsRte?.length && (
+          {rat?.gmr && (
+            <div className="sous-titre">
+              GMR <b>{rat.gmr}</b>
+              {rat.cm && <> · CM {rat.cm}</>}
+              {rat.eel && rat.eel !== rat.gmr && <> · EEL {rat.eel}</>}
+            </div>
+          )}
+          {!codeAffiche(ligne, s, rat) && !!ligne.candidatsRte?.length && (
             <div className="sous-titre alerte">
               Plusieurs ouvrages RTE possibles : {ligne.candidatsRte.join(', ')}
             </div>

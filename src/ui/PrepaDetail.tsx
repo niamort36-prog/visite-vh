@@ -46,6 +46,7 @@ export default function PrepaDetail({
     ajouterHelicoptere,
     supprimerHelicoptere,
     aggloManuel,
+    rattachement,
     taches: etatsTaches,
   } = useStore();
 
@@ -132,12 +133,12 @@ export default function PrepaDetail({
     const r = recherche.trim().toLowerCase();
     if (!r) return [];
     return lignes
-      .filter((l) => nomAffiche(l, suivi(l.id)).toLowerCase().includes(r))
+      .filter((l) => nomAffiche(l, suivi(l.id), rattachement(l.id)).toLowerCase().includes(r))
       .slice(0, 30);
-  }, [lignes, suivi, recherche]);
+  }, [lignes, suivi, recherche, rattachement]);
 
   const ajouterLigne = (l: Ligne, jour: string, demi: DemiJournee) => {
-    ajouterVol(prepa.id, jour, demi, volDepuisLigne(l, suivi(l.id)));
+    ajouterVol(prepa.id, jour, demi, volDepuisLigne(l, suivi(l.id), rattachement(l.id)));
   };
 
   return (
@@ -361,7 +362,7 @@ export default function PrepaDetail({
                         >
                           <code>{l.tension} kV</code>
                           <span>
-                            {nomAffiche(l, suivi(l.id))}
+                            {nomAffiche(l, suivi(l.id), rattachement(l.id))}
                             {dejaPlanifies.has(l.id) && <span className="tag">déjà planifié</span>}
                           </span>
                         </button>

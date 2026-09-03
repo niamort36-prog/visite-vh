@@ -69,6 +69,11 @@ compte, et reste utilisable **hors connexion** une fois le secteur chargé.
   elle-même**, sous le bloc équipage, avec le nombre de démarches encore à faire. C'est le
   même état des deux côtés : cocher ici ou là revient au même.
 
+- **Référentiel RTE** (optionnel, local) : vous pouvez charger dans l'application un export
+  des pylônes comportant les colonnes *CM*, *GMR*, *Code Liaison*, *Numéro Pylône* et
+  *Coord GPS*. Les ouvrages prennent alors leur **nom et leur code officiels**, leur
+  **rattachement CM / GMR / EEL**, et les pylônes retrouvés leur **numéro réel**. Un filtre
+  par GMR s'ajoute au tableau des lignes.
 - **Campagnes** : un suivi distinct par campagne (par exemple une par année).
 - **Sauvegarde** par export / import d'un fichier JSON, à conserver ou à partager.
 
@@ -84,6 +89,19 @@ compte, et reste utilisable **hors connexion** une fois le secteur chargé.
 | Aérodromes et hélistations | [OurAirports](https://ourairports.com/) | Domaine public. 1 666 terrains français, dont 433 avec code OACI. |
 | Établissements Seveso | Géorisques / BRGM (WFS) | 1 302 sites : nom, adresse, activité, seuil haut ou bas. Ni téléphone ni courriel. |
 | Zones urbanisées | Corine Land Cover 2018, classes 111 et 112 | 27 392 polygones. Approximation nationale des agglomérations au sens du survol. |
+
+### Le référentiel RTE reste sur votre poste
+
+Le fichier de pylônes n'est **ni versionné, ni publié, ni envoyé nulle part** : il est lu dans
+le navigateur, conservé dans son stockage local et repris dans l'export JSON du suivi. Le
+dépôt étant public, aucune donnée interne n'y est déposée — `.gitignore` écarte d'ailleurs
+les classeurs et le dossier `data/source/`.
+
+L'appariement est **géométrique** : les coordonnées du référentiel tombent à quelques mètres
+des pylônes OpenStreetMap (écart médian mesuré : 5 m), ce qui identifie l'ouvrage bien plus
+sûrement qu'une comparaison de noms. Aucun numéro n'est extrapolé : seuls sont retenus les
+pylônes effectivement retrouvés, et ceux qui s'intercalent entre deux pylônes retrouvés dont
+l'écart de rang correspond exactement à l'écart de numérotation.
 
 **Deux limites à connaître :**
 
@@ -171,6 +189,8 @@ scripts/build-dataset.mjs  reconstruction des lignes, numérotation, découpage 
                            proximité Seveso et traversée d'agglomération
 scripts/make-icons.mjs     icônes de la PWA
 src/data/                  chargement des jeux de données
+src/data/rte.ts            lecture du référentiel RTE (.xlsx ou .csv) dans le navigateur
+src/data/appariement.ts    rattachement géométrique des tracés au référentiel
 src/state/store.tsx        campagnes, suivi, avancement, export / import
 src/map/fonds.ts           définition des fonds de carte (IGN, OSM, VFR)
 src/map/MapView.tsx        carte Leaflet, tracés, pylônes, postes, position GPS

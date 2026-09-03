@@ -29,8 +29,30 @@ import type {
 } from '../types';
 import { natureDuTypeVol, vitesseParDefaut } from '../lib/vols';
 import { chargerDept, chargerIndex } from '../data/reseau';
+import type { ReferentielRte } from '../data/rte';
+import {
+  apparier,
+  appliquerNumeros,
+  bilan,
+  type BilanAppariement,
+  type RattachementLigne,
+} from '../data/appariement';
 
 const CLE = 'visite-vh:v1';
+/**
+ * Le référentiel RTE est conservé à part : il pèse quelques centaines de kilo-octets
+ * et n'a pas à être relu à chaque écriture du suivi.
+ */
+const CLE_RTE = 'visite-vh:rte';
+
+function lireReferentielLocal(): ReferentielRte | null {
+  try {
+    const brut = localStorage.getItem(CLE_RTE);
+    return brut ? (JSON.parse(brut) as ReferentielRte) : null;
+  } catch {
+    return null;
+  }
+}
 
 interface Persiste {
   campagnes: Campagne[];
@@ -156,6 +178,14 @@ interface Ctx {
   lignes: Ligne[];
   postes: Poste[];
 
+  /** référentiel RTE importé localement par l'exploitant, jamais publié */
+  referentiel: ReferentielRte | null;
+  setReferentiel: (r: ReferentielRte | null) => void;
+  /** rattachement des tracés chargés aux ouvrages du référentiel */
+  rattachements: Map<string, RattachementLigne>;
+  rattachement: (ligneId: string) => RattachementLigne | undefined;
+  bilanRte: BilanAppariement | null;
+
   campagnes: Campagne[];
   campagneCourante: string;
   setCampagneCourante: (id: string) => void;
@@ -248,6 +278,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [erreur, setErreur] = useState<string | null>(null);
   const [ligneActive, setLigneActive] = useState<string | null>(null);
   const [natureCourante, setNatureCourante] = useState<NatureVisite>('VH');
+  const [referentiel, setReferentielEtat] = useState<ReferentielRte | null>(lireReferentielLocal);
+  const [rattachements, setRattachements] = useState<Map<string, RattachementLigne>>(new Map());
   const compteur = useRef(0);
 
   // persistance
@@ -285,7 +317,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           for (const l of j.lignes) parId.set(l.id, l);
           for (const p of j.postes) parIdPoste.set(p.id, p);
         }
-        setLignes([...parId.values()].sort((a, b) => a.nom.localeCompare(b.nom, 'fr')));
+        const brutes = [...parId.values()];
+        // rattachement au référentiel RTE : noms d'ouvrage officiels, GMR et
+        // numéros de pylône vérifiés viennent se substituer aux valeurs calculées
+        const liens = referentiel ? apparier(brutes, referentiel) : new Map();
+        setRattachements(liens);
+        const finales = liens.size
+          ? brutes.map((l) => appliquerNumeros(l, liens.get(l.id)))
+          : brutes;
+        setLignes(finales.sort((a, b) => a.nom.localeCompare(b.nom, 'fr')));
         setPostes([...parIdPoste.values()]);
         setErreur(null);
       })
@@ -294,7 +334,29 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return () => {
       annule = true;
     };
-  }, [etat.depts]);
+  }, [etat.depts, referentiel]);
+
+  const setReferentiel = useCallback((r: ReferentielRte | null) => {
+    try {
+      if (r) localStorage.setItem(CLE_RTE, JSON.stringify(r));
+      else localStorage.removeItem(CLE_RTE);
+      setReferentielEtat(r);
+    } catch {
+      setErreur(
+        "Le référentiel RTE n'a pas pu être enregistré : espace de stockage insuffisant.",
+      );
+    }
+  }, []);
+
+  const rattachement = useCallback(
+    (ligneId: string) => rattachements.get(ligneId),
+    [rattachements],
+  );
+
+  const bilanRte = useMemo(
+    () => (rattachements.size ? bilan(rattachements) : null),
+    [rattachements],
+  );
 
   const setDepts = useCallback((d: string[]) => {
     setEtat((s) => ({ ...s, depts: d }));
@@ -658,6 +720,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setDepts,
     lignes,
     postes,
+    referentiel,
+    setReferentiel,
+    rattachements,
+    rattachement,
+    bilanRte,
     campagnes: etat.campagnes,
     campagneCourante: etat.campagneCourante,
     setCampagneCourante,
@@ -768,25 +835,36 @@ export function dernierPyloneFait(
  * périmètre à visiter quand les pylônes frontières sont renseignés, sinon la
  * longueur totale de la ligne.
  */
-export function volDepuisLigne(l: Ligne, s: SuiviLigne): Omit<VolLigne, 'id'> {
+export function volDepuisLigne(
+  l: Ligne,
+  s: SuiviLigne,
+  r?: RattachementLigne,
+): Omit<VolLigne, 'id'> {
   const a = calculerAvancement(l, s);
   const km = a.kmPerimetre > 0 ? a.kmPerimetre : l.km;
   return {
     ligneId: l.id,
-    nom: nomAffiche(l, s),
+    nom: nomAffiche(l, s, r),
     tension: l.tension,
     km: Math.round(km * 10) / 10,
   };
 }
 
-/** Libellé à afficher : celui saisi par l'exploitant prime sur le nom reconstitué. */
-export function nomAffiche(l: Ligne, s: SuiviLigne): string {
-  return s.nomPerso?.trim() || l.nom;
+/**
+ * Libellé à afficher, par ordre de priorité : celui saisi par l'exploitant, puis
+ * celui du référentiel RTE importé, puis le nom reconstitué à partir des postes.
+ */
+export function nomAffiche(l: Ligne, s: SuiviLigne, r?: RattachementLigne): string {
+  return s.nomPerso?.trim() || r?.nom || l.nom;
 }
 
-/** Code d'ouvrage RTE retenu : rattachement manuel prioritaire sur l'appariement automatique. */
-export function codeAffiche(l: Ligne, s: SuiviLigne): string | undefined {
-  return s.codeRtePerso || l.codeRte;
+/** Code d'ouvrage RTE retenu : saisie manuelle, puis référentiel, puis appariement par nom. */
+export function codeAffiche(
+  l: Ligne,
+  s: SuiviLigne,
+  r?: RattachementLigne,
+): string | undefined {
+  return s.codeRtePerso || r?.code || l.codeRte;
 }
 
 export interface EtatAgglo {

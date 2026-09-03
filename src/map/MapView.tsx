@@ -58,7 +58,8 @@ export default function MapView({
   onLigneSelection,
   lignesPrepa,
 }: Props) {
-  const { lignes, postes, suivi, ligneActive, setLigneActive, depts } = useStore();
+  const { lignes, postes, suivi, ligneActive, setLigneActive, depts, rattachement } =
+    useStore();
   const conteneur = useRef<HTMLDivElement>(null);
   const carte = useRef<L.Map | null>(null);
   const coucheLignes = useRef<L.LayerGroup | null>(null);
@@ -199,10 +200,13 @@ export default function MapView({
         setLigneActive(l.id);
         selectionCourante.current?.(l);
       });
-      const code = codeAffiche(l, s);
+      const rat = rattachement(l.id);
+      const code = codeAffiche(l, s, rat);
       trace.bindTooltip(
-        `<b>${nomAffiche(l, s)}</b><br>${l.tension} kV · ${l.km.toFixed(1).replace('.', ',')} km` +
-          (code ? `<br><code>${code}</code>` : ''),
+        `<b>${nomAffiche(l, s, rat)}</b><br>${l.tension} kV · ` +
+          `${l.km.toFixed(1).replace('.', ',')} km` +
+          (code ? `<br><code>${code}</code>` : '') +
+          (rat?.gmr ? `<br>GMR ${rat.gmr}` : ''),
         { sticky: true },
       );
       trace.addTo(g);
@@ -229,7 +233,7 @@ export default function MapView({
         }).addTo(g);
       }
     }
-  }, [lignes, suivi, ligneActive, setLigneActive]);
+  }, [lignes, suivi, ligneActive, setLigneActive, rattachement]);
 
   /* ---- ouvrages inscrits à la préparation ouverte ------------------- */
   useEffect(() => {
@@ -318,7 +322,9 @@ export default function MapView({
       });
       m.bindTooltip(
         `Pylône <b>${p.num}</b>${p.numReel ? '' : ' <i>(rang calculé)</i>'}<br>` +
-          `${nomAffiche(l, s)}<br>PK ${p.d.toFixed(2).replace('.', ',')} km`,
+          `${nomAffiche(l, s, rattachement(l.id))}<br>PK ${p.d
+            .toFixed(2)
+            .replace('.', ',')} km`,
         { direction: 'top' },
       );
       m.on('click', () => {

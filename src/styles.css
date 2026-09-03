@@ -1768,3 +1768,18 @@ th.col-agglo {
   font-weight: 700;
   opacity: 0.8;
 }
+
+/* Rattachement au référentiel RTE : GMR affiché à côté de l'ouvrage */
+.marque-gmr {
+  margin-left: 5px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  border-radius: 7px;
+  padding: 0 5px;
+  vertical-align: 1px;
+  white-space: nowrap;
+  background: #e0e7ff;
+  color: #3730a3;
+  border: 1px solid #a5b4fc;
+}

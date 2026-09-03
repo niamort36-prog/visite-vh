@@ -3,6 +3,7 @@ import { useStore } from '../state/store';
 import { km, octets, tuilesPourBbox } from '../lib/geo';
 import { estHorsLigne } from '../data/reseau';
 import { COUCHE_AERO, FONDS_TELECHARGEABLES, urlTuile } from '../map/fonds';
+import ReferentielPanel from './ReferentielPanel';
 
 /**
  * Choix du secteur : quels départements charger, et mise à disposition hors ligne
@@ -107,6 +108,8 @@ export default function SecteurPanel() {
         value={filtre}
         onChange={(e) => setFiltre(e.target.value)}
       />
+
+      <ReferentielPanel />
 
       <div className="liste-depts">
         {liste.map((d) => (

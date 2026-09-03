@@ -9,3 +9,9 @@ Thumbs.db
 data/raw/
 data/fetch.log
 data/*.log
+
+# Référentiel RTE : données internes, importées localement dans l'application
+# et jamais versionnées ni publiées
+data/source/
+*.xlsx
+*.xlsm

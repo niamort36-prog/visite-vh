@@ -20,7 +20,7 @@ interface Props {
 
 /** Tableau de bord du secteur : une ligne par ouvrage, avec kilométrage et avancement. */
 export default function LignesTable({ onOuvrir }: Props) {
-  const { lignes, suivi, ligneActive, aggloManuel, setAggloManuel } = useStore();
+  const { lignes, suivi, ligneActive, aggloManuel, setAggloManuel, rattachement } = useStore();
   const [recherche, setRecherche] = useState('');
   const [tensionsActives, setTensionsActives] = useState<number[]>([]);
   const [statutsActifs, setStatutsActifs] = useState<StatutLigne[]>([]);
@@ -28,6 +28,16 @@ export default function LignesTable({ onOuvrir }: Props) {
   const [aIdentifierSeules, setAIdentifierSeules] = useState(false);
   const [aggloSeules, setAggloSeules] = useState(false);
   const [sevesoSeules, setSevesoSeules] = useState(false);
+  const [gmrActifs, setGmrActifs] = useState<string[]>([]);
+
+  const gmrDisponibles = useMemo(() => {
+    const s = new Set<string>();
+    for (const l of lignes) {
+      const g = rattachement(l.id)?.gmr;
+      if (g) s.add(g);
+    }
+    return [...s].sort();
+  }, [lignes, rattachement]);
 
   const rangees = useMemo(() => {
     const r = recherche.trim().toLowerCase();
@@ -39,10 +49,12 @@ export default function LignesTable({ onOuvrir }: Props) {
         if (aIdentifierSeules && !l.aIdentifier) return false;
         if (aggloSeules && !etatAgglo(l, aggloManuel).actif) return false;
         if (sevesoSeules && !l.seveso?.length) return false;
+        if (gmrActifs.length && !gmrActifs.includes(rattachement(l.id)?.gmr ?? '')) return false;
         if (!r) return true;
         return (
-          nomAffiche(l, s).toLowerCase().includes(r) ||
-          (codeAffiche(l, s) ?? '').toLowerCase().includes(r) ||
+          nomAffiche(l, s, rattachement(l.id)).toLowerCase().includes(r) ||
+          (codeAffiche(l, s, rattachement(l.id)) ?? '').toLowerCase().includes(r) ||
+          (rattachement(l.id)?.gmr ?? '').toLowerCase().includes(r) ||
           (l.nomRte ?? '').toLowerCase().includes(r)
         );
       })
@@ -70,7 +82,13 @@ export default function LignesTable({ onOuvrir }: Props) {
               )
             );
           default:
-            return sens * nomAffiche(x.l, x.s).localeCompare(nomAffiche(y.l, y.s), 'fr');
+            return (
+              sens *
+              nomAffiche(x.l, x.s, rattachement(x.l.id)).localeCompare(
+                nomAffiche(y.l, y.s, rattachement(y.l.id)),
+                'fr',
+              )
+            );
         }
       });
   }, [
@@ -84,6 +102,8 @@ export default function LignesTable({ onOuvrir }: Props) {
     aggloSeules,
     sevesoSeules,
     aggloManuel,
+    gmrActifs,
+    rattachement,
   ]);
 
   const totaux = useMemo(() => {
@@ -174,6 +194,23 @@ export default function LignesTable({ onOuvrir }: Props) {
         </button>
       </div>
 
+      {gmrDisponibles.length > 1 && (
+        <div className="filtres">
+          <span className="aide">GMR :</span>
+          {gmrDisponibles.map((g) => (
+            <button
+              key={g}
+              className={gmrActifs.includes(g) ? 'puce active' : 'puce'}
+              onClick={() =>
+                setGmrActifs((v) => (v.includes(g) ? v.filter((x) => x !== g) : [...v, g]))
+              }
+            >
+              {g}
+            </button>
+          ))}
+        </div>
+      )}
+
       <p className="legende">
         <span className="pastille-agglo" /> traverse une agglomération —{' '}
         <b>bi-turbine obligatoire</b> pour le survol. La colonne <b>Agg.</b> se coche et se
@@ -231,7 +268,12 @@ export default function LignesTable({ onOuvrir }: Props) {
               >
                 <td className="col-nom">
                   <span className="pastille-tension" style={{ background: couleur(l.tension) }} />
-                  <span className="nom">{nomAffiche(l, s)}</span>
+                  <span className="nom">{nomAffiche(l, s, rattachement(l.id))}</span>
+                  {rattachement(l.id)?.gmr && (
+                    <span className="marque-gmr" title={`GMR ${rattachement(l.id)?.gmr} — CM ${rattachement(l.id)?.cm}`}>
+                      {rattachement(l.id)?.gmr}
+                    </span>
+                  )}
                   {l.seveso?.length && (
                     <span
                       className="marque-seveso"
@@ -265,7 +307,9 @@ export default function LignesTable({ onOuvrir }: Props) {
                       </span>
                     );
                   })}
-                  {codeAffiche(l, s) && <code className="code-rte">{codeAffiche(l, s)}</code>}
+                  {codeAffiche(l, s, rattachement(l.id)) && (
+                    <code className="code-rte">{codeAffiche(l, s, rattachement(l.id))}</code>
+                  )}
                 </td>
                 <td className="col-agglo" onClick={(e) => e.stopPropagation()}>
                   {(() => {

@@ -39,6 +39,7 @@ export default function App() {
     preparations,
     ajouterVol,
     taches: etatsTaches,
+    rattachement,
   } = useStore();
   const toutesTaches = useTaches();
   const [onglet, setOnglet] = useState<Onglet>('secteur');
@@ -97,9 +98,14 @@ export default function App() {
   const selectionCarte = useCallback(
     (l: Ligne) => {
       if (!selection) return;
-      ajouterVol(selection.prepaId, selection.jour, selection.demi, volDepuisLigne(l, suivi(l.id)));
+      ajouterVol(
+        selection.prepaId,
+        selection.jour,
+        selection.demi,
+        volDepuisLigne(l, suivi(l.id), rattachement(l.id)),
+      );
     },
-    [selection, ajouterVol, suivi],
+    [selection, ajouterVol, suivi, rattachement],
   );
 
   // Ouvrir un ouvrage depuis le tableau le sélectionne, l'affiche en détail et le cadre.
@@ -253,7 +259,8 @@ export default function App() {
               <b>Pylône {actionPylone.pylone.num}</b>
               {!actionPylone.pylone.numReel && <span className="tag">rang calculé</span>}
               <div className="sous-titre">
-                {nomAffiche(actionPylone.ligne, suivi(actionPylone.ligne.id))} · PK{' '}
+                {nomAffiche(actionPylone.ligne, suivi(actionPylone.ligne.id), rattachement(actionPylone.ligne.id))} ·{' '}
+                PK{' '}
                 {actionPylone.pylone.d.toFixed(2).replace('.', ',')} km
               </div>
             </div>
