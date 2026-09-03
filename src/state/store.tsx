@@ -101,6 +101,51 @@ export interface Secteur {
 
 const SECTEUR_VIDE: Secteur = { cm: '', gmr: [], eel: [], inclureNonRattaches: true };
 
+/**
+ * Filtres d'affichage. Ils valent pour la liste comme pour la carte : masquer un
+ * domaine de tension doit le faire disparaître des deux. Ils ne sont pas
+ * enregistrés — retrouver la carte amputée au démarrage, sans savoir pourquoi,
+ * serait plus gênant qu'utile.
+ */
+export interface FiltresAffichage {
+  /** tensions retenues ; vide signifie toutes */
+  tensions: number[];
+  /** statuts de visite héliportée retenus ; vide signifie tous */
+  statuts: StatutLigne[];
+  /** GMR retenus à l'intérieur du secteur ; vide signifie tous */
+  gmr: string[];
+  /** n'afficher que les ouvrages traversant une agglomération */
+  aggloSeules: boolean;
+  /** n'afficher que les ouvrages proches d'un site Seveso */
+  sevesoSeules: boolean;
+  /** n'afficher que les ouvrages restant à identifier */
+  aIdentifierSeules: boolean;
+  /** afficher les postes sur la carte */
+  postes: boolean;
+}
+
+export const FILTRES_VIDES: FiltresAffichage = {
+  tensions: [],
+  statuts: [],
+  gmr: [],
+  aggloSeules: false,
+  sevesoSeules: false,
+  aIdentifierSeules: false,
+  postes: true,
+};
+
+/** Un filtre est-il actif, hors affichage des postes ? */
+export function filtresActifs(f: FiltresAffichage): boolean {
+  return (
+    f.tensions.length > 0 ||
+    f.statuts.length > 0 ||
+    f.gmr.length > 0 ||
+    f.aggloSeules ||
+    f.sevesoSeules ||
+    f.aIdentifierSeules
+  );
+}
+
 function campagneParDefaut(): Campagne {
   const annee = new Date().getFullYear();
   return {
@@ -269,8 +314,13 @@ interface Ctx {
     eelParGmr: Record<string, string[]>;
   };
 
+  /** ouvrages du secteur, avant filtres d'affichage */
   lignes: Ligne[];
+  /** ouvrages effectivement montrés dans la liste et sur la carte */
+  lignesAffichees: Ligne[];
   postes: Poste[];
+  filtres: FiltresAffichage;
+  setFiltres: (f: FiltresAffichage) => void;
 
   /** référentiel RTE importé localement par l'exploitant, jamais publié */
   referentiel: ReferentielRte | null;
@@ -389,6 +439,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [erreur, setErreur] = useState<string | null>(null);
   const [ligneActive, setLigneActive] = useState<string | null>(null);
   const [natureCourante, setNatureCourante] = useState<NatureVisite>('VH');
+  const [filtres, setFiltres] = useState<FiltresAffichage>(FILTRES_VIDES);
   const [referentiel, setReferentielEtat] = useState<ReferentielRte | null>(lireReferentielLocal);
   const [rattachements, setRattachements] = useState<Map<string, RattachementLigne>>(new Map());
   const compteur = useRef(0);
@@ -463,6 +514,35 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       return !cm || r.cm === cm;
     });
   }, [lignesChargees, rattachements, etat.secteur, referentiel]);
+
+  const suivisCampagne = etat.suivis[etat.campagneCourante] ?? [];
+
+  const parLigne = useMemo(() => {
+    const m = new Map<string, SuiviLigne>();
+    for (const s of suivisCampagne) m.set(s.ligneId, s);
+    return m;
+  }, [suivisCampagne]);
+
+  /**
+   * Ouvrages réellement affichés : le secteur, puis les filtres. La liste et la
+   * carte lisent la même chose, faute de quoi elles se contrediraient.
+   */
+  const lignesAffichees = useMemo(() => {
+    if (!filtresActifs(filtres)) return lignes;
+    return lignes.filter((l) => {
+      if (filtres.tensions.length && !filtres.tensions.includes(l.tension)) return false;
+      if (filtres.aggloSeules && !etatAgglo(l, etat.aggloManuel).actif) return false;
+      if (filtres.sevesoSeules && !l.seveso?.length) return false;
+      if (filtres.aIdentifierSeules && !l.aIdentifier) return false;
+      if (filtres.gmr.length && !filtres.gmr.includes(rattachements.get(l.id)?.gmr ?? ''))
+        return false;
+      if (filtres.statuts.length) {
+        const st = (parLigne.get(l.id) ?? suiviVide(l.id)).visites.VH.statut;
+        if (!filtres.statuts.includes(st)) return false;
+      }
+      return true;
+    });
+  }, [lignes, filtres, etat.aggloManuel, rattachements, parLigne]);
 
   const setReferentiel = useCallback((r: ReferentielRte | null) => {
     try {
@@ -543,13 +623,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setEtat((s) => ({ ...s, depts: d }));
   }, []);
 
-  const suivisCampagne = etat.suivis[etat.campagneCourante] ?? [];
-
-  const parLigne = useMemo(() => {
-    const m = new Map<string, SuiviLigne>();
-    for (const s of suivisCampagne) m.set(s.ligneId, s);
-    return m;
-  }, [suivisCampagne]);
 
   const suivi = useCallback(
     (ligneId: string): SuiviLigne => parLigne.get(ligneId) ?? suiviVide(ligneId),
@@ -977,7 +1050,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setSecteur,
     zonesDisponibles,
     lignes,
+    lignesAffichees,
     postes,
+    filtres,
+    setFiltres,
     referentiel,
     setReferentiel,
     rattachements,

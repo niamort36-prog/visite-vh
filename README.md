@@ -14,6 +14,12 @@ compte, et reste utilisable **hors connexion** une fois le secteur chargé.
   complète pour former la carte VFR.
 - **Tableau du secteur** : une ligne par ouvrage, avec longueur, périmètre à visiter,
   kilomètres faits et restants, pourcentage d'avancement et date de dernière mise à jour.
+- **Filtres d'affichage** : par domaine de tension (HTB1, HTB2, HTB3) ou tension exacte, par
+  avancement (à faire, en cours, terminée, hors périmètre), par GMR, ainsi que les ouvrages en
+  agglomération, proches d'un site Seveso ou restant à identifier. Les postes s'affichent ou se
+  masquent d'un clic. **Ces filtres valent pour la liste comme pour la carte** : ce qui est
+  masqué disparaît des deux, et un bandeau rappelle en permanence combien d'ouvrages sont
+  cachés, avec un retour immédiat à l'affichage complet.
 - **Pylônes frontières** : bornes du tronçon dont vous avez la charge, définies au clic sur
   la carte ou dans la liste.
 - **Suivi de l'avancement, par nature de visite** : une même ligne se suit séparément en

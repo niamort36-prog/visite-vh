@@ -8,8 +8,9 @@ import {
   nomAffiche,
   useStore,
 } from '../state/store';
-import { couleur, LIBELLE_STATUT, TENSIONS } from '../lib/tensions';
+import { couleur } from '../lib/tensions';
 import { NATURES } from '../lib/vols';
+import BarreFiltres from './BarreFiltres';
 import { dateCourte, km } from '../lib/geo';
 
 type Colonne = 'nom' | 'tension' | 'km' | 'perimetre' | 'faits' | 'restants' | 'pourcent' | 'date';
@@ -20,15 +21,10 @@ interface Props {
 
 /** Tableau de bord du secteur : une ligne par ouvrage, avec kilométrage et avancement. */
 export default function LignesTable({ onOuvrir }: Props) {
-  const { lignes, suivi, ligneActive, aggloManuel, setAggloManuel, rattachement } = useStore();
+  const { lignes, lignesAffichees, suivi, ligneActive, aggloManuel, setAggloManuel, rattachement } =
+    useStore();
   const [recherche, setRecherche] = useState('');
-  const [tensionsActives, setTensionsActives] = useState<number[]>([]);
-  const [statutsActifs, setStatutsActifs] = useState<StatutLigne[]>([]);
   const [tri, setTri] = useState<{ col: Colonne; desc: boolean }>({ col: 'nom', desc: false });
-  const [aIdentifierSeules, setAIdentifierSeules] = useState(false);
-  const [aggloSeules, setAggloSeules] = useState(false);
-  const [sevesoSeules, setSevesoSeules] = useState(false);
-  const [gmrActifs, setGmrActifs] = useState<string[]>([]);
 
   const gmrDisponibles = useMemo(() => {
     const s = new Set<string>();
@@ -41,16 +37,10 @@ export default function LignesTable({ onOuvrir }: Props) {
 
   const rangees = useMemo(() => {
     const r = recherche.trim().toLowerCase();
-    return lignes
+    return lignesAffichees
       .filter((l) => {
-        if (tensionsActives.length && !tensionsActives.includes(l.tension)) return false;
-        const s = suivi(l.id);
-        if (statutsActifs.length && !statutsActifs.includes(s.visites.VH.statut)) return false;
-        if (aIdentifierSeules && !l.aIdentifier) return false;
-        if (aggloSeules && !etatAgglo(l, aggloManuel).actif) return false;
-        if (sevesoSeules && !l.seveso?.length) return false;
-        if (gmrActifs.length && !gmrActifs.includes(rattachement(l.id)?.gmr ?? '')) return false;
         if (!r) return true;
+        const s = suivi(l.id);
         return (
           nomAffiche(l, s, rattachement(l.id)).toLowerCase().includes(r) ||
           (codeAffiche(l, s, rattachement(l.id)) ?? '').toLowerCase().includes(r) ||
@@ -91,20 +81,7 @@ export default function LignesTable({ onOuvrir }: Props) {
             );
         }
       });
-  }, [
-    lignes,
-    suivi,
-    recherche,
-    tensionsActives,
-    statutsActifs,
-    tri,
-    aIdentifierSeules,
-    aggloSeules,
-    sevesoSeules,
-    aggloManuel,
-    gmrActifs,
-    rattachement,
-  ]);
+  }, [lignesAffichees, suivi, recherche, tri, rattachement]);
 
   const totaux = useMemo(() => {
     const t = { perimetre: 0, faits: 0, restants: 0, lignes: rangees.length, terminees: 0 };
@@ -147,75 +124,7 @@ export default function LignesTable({ onOuvrir }: Props) {
         onChange={(e) => setRecherche(e.target.value)}
       />
 
-      <div className="filtres">
-        {TENSIONS.map((t) => (
-          <button
-            key={t}
-            className={tensionsActives.includes(t) ? 'puce active' : 'puce'}
-            style={{ borderColor: couleur(t), color: tensionsActives.includes(t) ? '#fff' : couleur(t), background: tensionsActives.includes(t) ? couleur(t) : undefined }}
-            onClick={() =>
-              setTensionsActives((v) => (v.includes(t) ? v.filter((x) => x !== t) : [...v, t]))
-            }
-          >
-            {t} kV
-          </button>
-        ))}
-        {(['a_faire', 'en_cours', 'fait', 'hors_perimetre'] as StatutLigne[]).map((s) => (
-          <button
-            key={s}
-            className={statutsActifs.includes(s) ? 'puce active' : 'puce'}
-            onClick={() =>
-              setStatutsActifs((v) => (v.includes(s) ? v.filter((x) => x !== s) : [...v, s]))
-            }
-          >
-            {LIBELLE_STATUT[s]}
-          </button>
-        ))}
-        <button
-          className={aIdentifierSeules ? 'puce active' : 'puce'}
-          title="Ouvrages dont aucune extrémité n'est nommée dans les données"
-          onClick={() => setAIdentifierSeules((v) => !v)}
-        >
-          À identifier
-        </button>
-        <button
-          className={aggloSeules ? 'puce active puce-agglo' : 'puce puce-agglo'}
-          title="Ouvrages traversant une agglomération"
-          onClick={() => setAggloSeules((v) => !v)}
-        >
-          Agglomération
-        </button>
-        <button
-          className={sevesoSeules ? 'puce active puce-sev' : 'puce puce-sev'}
-          title="Ouvrages passant à moins de 2 km d'un site Seveso"
-          onClick={() => setSevesoSeules((v) => !v)}
-        >
-          Seveso
-        </button>
-      </div>
-
-      {gmrDisponibles.length > 1 && (
-        <div className="filtres">
-          <span className="aide">GMR :</span>
-          {gmrDisponibles.map((g) => (
-            <button
-              key={g}
-              className={gmrActifs.includes(g) ? 'puce active' : 'puce'}
-              onClick={() =>
-                setGmrActifs((v) => (v.includes(g) ? v.filter((x) => x !== g) : [...v, g]))
-              }
-            >
-              {g}
-            </button>
-          ))}
-        </div>
-      )}
-
-      <p className="legende">
-        <span className="pastille-agglo" /> traverse une agglomération —{' '}
-        <b>bi-turbine obligatoire</b> pour le survol. La colonne <b>Agg.</b> se coche et se
-        décoche : la détection automatique n'est qu'une approximation.
-      </p>
+      <BarreFiltres masquees={lignes.length - lignesAffichees.length} />
 
       <div className="synthese">
         <div>

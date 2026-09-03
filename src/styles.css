@@ -1873,3 +1873,41 @@ th.col-agglo {
 .bandeau-zone {
   background: #15803d;
 }
+
+/* ---------------------------------------------------------------- */
+/* Barre de filtres d'affichage                                      */
+/* ---------------------------------------------------------------- */
+
+.barre-filtres {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.barre-filtres .filtres {
+  align-items: center;
+}
+.barre-filtres .aide {
+  min-width: 74px;
+}
+.separateur-filtres {
+  width: 1px;
+  align-self: stretch;
+  background: var(--bord);
+  margin: 0 3px;
+}
+.filtres-actifs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: #92400e;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: var(--rayon);
+  padding: 4px 9px;
+}
+.filtres-actifs .lien {
+  margin-left: auto;
+  color: #92400e;
+  text-decoration: underline;
+}

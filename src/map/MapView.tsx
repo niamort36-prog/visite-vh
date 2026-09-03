@@ -58,7 +58,7 @@ export default function MapView({
   onLigneSelection,
   lignesPrepa,
 }: Props) {
-  const { lignes, postes, suivi, ligneActive, setLigneActive, depts, rattachement } =
+  const { lignesAffichees: lignes, postes, suivi, ligneActive, setLigneActive, depts, rattachement, filtres } =
     useStore();
   const conteneur = useRef<HTMLDivElement>(null);
   const carte = useRef<L.Map | null>(null);
@@ -254,7 +254,7 @@ export default function MapView({
     const g = couchePostes.current;
     if (!g) return;
     g.clearLayers();
-    if (zoom < 8) return;
+    if (zoom < 8 || !filtres.postes) return;
     for (const p of postes) {
       if (bornes && !bornes.contains([p.lat, p.lon])) continue;
       const m = L.circleMarker([p.lat, p.lon], {
@@ -281,7 +281,7 @@ export default function MapView({
         }).addTo(g);
       }
     }
-  }, [postes, zoom, bornes]);
+  }, [postes, zoom, bornes, filtres.postes]);
 
   /* ---- pylônes ---------------------------------------------------- */
   const pylonesVisibles = useMemo(() => {
