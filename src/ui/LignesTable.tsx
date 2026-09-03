@@ -3,7 +3,7 @@ import type { Ligne, StatutLigne } from '../types';
 import {
   calculerAvancement,
   codeAffiche,
-  dernierPyloneFait,
+  portionsFaites,
   etatAgglo,
   nomAffiche,
   useStore,
@@ -306,11 +306,13 @@ export default function LignesTable({ onOuvrir }: Props) {
                         key={n.cle}
                         className={`marque-nature n-${n.cle}`}
                         title={(() => {
-                          const der = dernierPyloneFait(l, s, n.cle);
-                          const a = l.pylones.find((p) => p.i === av.debut)?.num ?? av.debut;
-                          const b = l.pylones.find((p) => p.i === der)?.num ?? der;
+                          const num = (rang: number) =>
+                            l.pylones.find((p) => p.i === rang)?.num ?? rang;
+                          const zones = portionsFaites(l, s, n.cle)
+                            .map((z) => `${num(z.debut)} → ${num(z.fin)}`)
+                            .join(', ');
                           return (
-                            `${n.nom} : du pylône ${a} au pylône ${b}` +
+                            `${n.nom} : ${zones || 'aucune zone'}` +
                             ` — ${av.kmFaits.toFixed(1).replace('.', ',')} km sur ` +
                             `${av.kmPerimetre.toFixed(1).replace('.', ',')} km ` +
                             `(${Math.round(av.pourcent)} %)`

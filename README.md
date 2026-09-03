@@ -23,12 +23,22 @@ compte, et reste utilisable **hors connexion** une fois le secteur chargé.
 
   | Nature | Sur la carte | Kilométrage |
   | --- | --- | --- |
-  | VH mono / bi-turbine | la portion survolée passe en **vert clair translucide**, si bien que seule la zone restant à faire garde la couleur de tension | **compté** |
+  | VH mono / bi-turbine | les portions survolées passent en **vert clair translucide**, si bien que seules les zones restant à faire gardent la couleur de tension | **compté** |
   | VTIR | la portion survolée est **doublée** : un trait large surmonté d'un trait clair, qui se lit comme deux lignes parallèles | non compté |
   | Vol dédié LiDAR | **rien n'est tracé** ; l'avancement se lit en repère dans la liste des lignes, la zone survolée au survol du repère et dans le panneau *Ouvrage* | non compté |
 
   Les colonnes *Faits*, *Reste* et *%* du tableau ne portent donc que sur les visites
   héliportées ; VTIR et LiDAR apparaissent en repère à côté du nom de la ligne.
+
+- **Avancement par zones** : une ligne est rarement faite d'un seul tenant. L'avancement se
+  saisit donc sous forme de **zones survolées** — d'un pylône à un autre, chacune avec sa
+  date — et l'application en déduit **ce qui reste**, y compris une portion oubliée au milieu.
+  Le statut *Terminée* vaut validation à 100 % ; *En cours* s'accompagne de la liste des zones
+  et du détail des lacunes. Sur la carte, une zone se saisit en cliquant le pylône de début
+  puis celui de fin.
+- **Note et observations conservées d'une campagne à l'autre** : elles ne sont plus rattachées
+  à une campagne mais à l'ouvrage. Ce qui a été consigné cette année se retrouve l'an
+  prochain, chaque observation gardant sa date.
 - **Observations** géolocalisées au pylône, avec niveau de gravité.
 - **Préparations de vol** : au sein d'une campagne, une préparation par semaine (S24…) et
   par type de vol (VH mono-turbine, VH bi-turbines, VTIR, vol dédié LiDAR). On y renseigne

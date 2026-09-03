@@ -3,15 +3,16 @@ import type { Ligne, StatutLigne } from '../types';
 import {
   calculerAvancement,
   codeAffiche,
-  dernierPyloneFait,
   etatAgglo,
   nomAffiche,
+  portionsFaites,
   useStore,
 } from '../state/store';
 import { couleur, LIBELLE_STATUT } from '../lib/tensions';
 import { NATURES, nomNature } from '../lib/vols';
 import { aujourdhui, dateCourte, km } from '../lib/geo';
 import RattacherOuvrage from './RattacherOuvrage';
+import ZonesSurvolees from './ZonesSurvolees';
 import { SevesoDetail } from './SevesoCellule';
 
 interface Props {
@@ -30,6 +31,8 @@ export default function LignePanel({ ligne, onCadrerPylone }: Props) {
     setAggloManuel,
     rattachement,
     majVisite,
+    note,
+    setNote,
     natureCourante,
     setNatureCourante,
   } = useStore();
@@ -57,13 +60,11 @@ export default function LignePanel({ ligne, onCadrerPylone }: Props) {
   const changerStatut = (statut: StatutLigne) => {
     const patch: Partial<typeof v> = { statut };
     if (statut === 'fait') {
-      patch.avancement = a.fin;
       patch.dateFin = v.dateFin ?? aujourdhui();
       patch.dateDebut = v.dateDebut ?? aujourdhui();
     } else if (statut === 'en_cours') {
       patch.dateDebut = v.dateDebut ?? aujourdhui();
     } else if (statut === 'a_faire') {
-      patch.avancement = undefined;
       patch.dateFin = undefined;
     }
     majVisite(ligne.id, nature, patch);
@@ -222,69 +223,40 @@ export default function LignePanel({ ligne, onCadrerPylone }: Props) {
         <div className="avancement-chiffres">
           <b>{Math.round(a.pourcent)} %</b> · {km(a.kmFaits)} faits sur {km(a.kmPerimetre)} ·{' '}
           <span className="reste">{km(a.kmRestants)} restants</span>
-          {(() => {
-            const der = dernierPyloneFait(ligne, s, nature);
-            if (der == null) return null;
-            const pa = ligne.pylones.find((p) => p.i === a.debut)?.num ?? a.debut;
-            const pb = ligne.pylones.find((p) => p.i === der)?.num ?? der;
-            return (
-              <div>
-                Zone survolée : du pylône <b>{pa}</b> au pylône <b>{pb}</b>.
-              </div>
-            );
-          })()}
         </div>
       </div>
-      <div className="grille2">
+      <ZonesSurvolees ligne={ligne} nature={nature} />
+
+      <div className="grille2 serree">
         <label>
-          Dernier pylône survolé
-          <select
-            value={v.avancement ?? ''}
-            onChange={(e) =>
-              majVisite(ligne.id, nature, {
-                avancement: e.target.value ? Number(e.target.value) : undefined,
-                statut: v.statut === 'a_faire' ? 'en_cours' : v.statut,
-                dateDebut: v.dateDebut ?? aujourdhui(),
-              })
-            }
-          >
-            <option value="">—</option>
-            {ligne.pylones
-              .filter((p) => p.i >= a.debut && p.i <= a.fin)
-              .map((p) => (
-                <option key={p.i} value={p.i}>
-                  {p.num} — PK {p.d.toFixed(1).replace('.', ',')}
-                </option>
-              ))}
-          </select>
+          Première intervention
+          <input
+            type="date"
+            value={v.dateDebut ?? ''}
+            onChange={(e) => majVisite(ligne.id, nature, { dateDebut: e.target.value })}
+          />
         </label>
-        <div className="grille2 serree">
-          <label>
-            Date de début
-            <input
-              type="date"
-              value={v.dateDebut ?? ''}
-              onChange={(e) => majVisite(ligne.id, nature, { dateDebut: e.target.value })}
-            />
-          </label>
-          <label>
-            Date de fin
-            <input
-              type="date"
-              value={v.dateFin ?? ''}
-              onChange={(e) => majVisite(ligne.id, nature, { dateFin: e.target.value })}
-            />
-          </label>
-        </div>
+        <label>
+          Dernière intervention
+          <input
+            type="date"
+            value={v.dateFin ?? ''}
+            onChange={(e) => majVisite(ligne.id, nature, { dateFin: e.target.value })}
+          />
+        </label>
       </div>
 
       <div className="bloc-titre">Note</div>
+      <p className="aide">
+        Note et observations sont conservées d&apos;une campagne à l&apos;autre : vous
+        retrouverez l&apos;an prochain ce qui a été consigné cette année.
+      </p>
       <textarea
         className="champ"
         rows={2}
         placeholder="Contraintes, zones sensibles, consignes de survol…"
-        value={s.note ?? ''}
-        onChange={(e) => majSuivi(ligne.id, { note: e.target.value })}
+        value={note(ligne.id)}
+        onChange={(e) => setNote(ligne.id, e.target.value)}
       />
 
       <div className="bloc-titre">
@@ -367,7 +339,7 @@ export default function LignePanel({ ligne, onCadrerPylone }: Props) {
           </div>
         </div>
       ) : (
-        <button onClick={() => setNouvelleObs({ i: v.avancement ?? a.debut, gravite: 1, texte: '' })}>
+        <button onClick={() => setNouvelleObs({ i: a.debut, gravite: 1, texte: '' })}>
           + Ajouter une observation
         </button>
       )}
@@ -385,7 +357,7 @@ export default function LignePanel({ ligne, onCadrerPylone }: Props) {
         {pylones.slice(0, 400).map((p) => {
           const hors = p.i < a.debut || p.i > a.fin;
           const fait =
-            v.statut === 'fait' || (v.avancement != null && p.i <= v.avancement && !hors);
+            !hors && portionsFaites(ligne, s, nature).some((z) => p.i >= z.debut && p.i <= z.fin);
           return (
             <button
               key={p.i}

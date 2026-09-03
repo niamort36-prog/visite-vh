@@ -113,10 +113,26 @@ export interface Observation {
  * être survolée en VH, en VTIR et en LiDAR à des dates différentes, chacune avec
  * sa propre progression.
  */
+/**
+ * Une zone effectivement survolée, bornée par deux pylônes. Une ligne peut en
+ * compter plusieurs : il arrive qu'on la fasse entièrement sauf une portion au
+ * milieu, et chaque passage a sa propre date.
+ */
+export interface ZoneSurvolee {
+  id: string;
+  /** rang du premier pylône de la zone */
+  debut: number;
+  /** rang du dernier pylône de la zone */
+  fin: number;
+  /** date du survol */
+  date?: string;
+  note?: string;
+}
+
 export interface AvancementVisite {
   statut: StatutLigne;
-  /** rang du dernier pylône effectivement survolé */
-  avancement?: number;
+  /** zones survolées ; leur complément donne ce qui reste à faire */
+  zones: ZoneSurvolee[];
   dateDebut?: string;
   dateFin?: string;
   /** date de la dernière mise à jour de l'avancement */
@@ -129,7 +145,6 @@ export interface SuiviLigne {
   debut?: number;
   /** pylône frontière de fin (rang) */
   fin?: number;
-  note?: string;
   /** libellé saisi par l'exploitant, prioritaire sur le nom reconstitué */
   nomPerso?: string;
   /** ouvrage RTE rattaché à la main depuis le catalogue officiel */
@@ -156,7 +171,10 @@ export interface Sauvegarde {
   exporteLe: string;
   campagnes: Campagne[];
   suivis: Record<string, SuiviLigne[]>;
-  observations: Record<string, Observation[]>;
+  /** notes de ligne, conservées d'une campagne à l'autre */
+  notes?: Record<string, string>;
+  /** observations, conservées d'une campagne à l'autre */
+  observations: Observation[] | Record<string, Observation[]>;
   preparations?: Record<string, Preparation[]>;
   helicopteres?: Helicoptere[];
   contactsSeveso?: Record<string, ContactSeveso>;

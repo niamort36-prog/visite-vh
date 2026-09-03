@@ -26,6 +26,7 @@ import type {
   SuiviLigne,
   TypeVol,
   VolLigne,
+  ZoneSurvolee,
 } from '../types';
 import { natureDuTypeVol, vitesseParDefaut } from '../lib/vols';
 import { chargerDept, chargerIndex } from '../data/reseau';
@@ -62,7 +63,10 @@ interface Persiste {
   /** secteur de travail, exprimé en centres de maintenance et GMR */
   secteur: Secteur;
   suivis: Record<string, SuiviLigne[]>;
-  observations: Record<string, Observation[]>;
+  /** notes de ligne, communes à toutes les campagnes */
+  notes: Record<string, string>;
+  /** observations, communes à toutes les campagnes : elles se reportent d'une année sur l'autre */
+  observations: Observation[];
   /** préparations de vol, par campagne */
   preparations: Record<string, Preparation[]>;
   /** flotte connue, commune à toutes les campagnes */
@@ -110,7 +114,11 @@ function campagneParDefaut(): Campagne {
 
 /** Avancement vierge. */
 function visiteVide(): AvancementVisite {
-  return { statut: 'a_faire' };
+  return { statut: 'a_faire', zones: [] };
+}
+
+function nouvelId(prefixe: string): string {
+  return `${prefixe}${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 }
 
 export function suiviVide(ligneId: string): SuiviLigne {
@@ -124,24 +132,74 @@ export function suiviVide(ligneId: string): SuiviLigne {
  * Les suivis enregistrés avant la séparation par nature portaient un unique
  * avancement : il correspondait aux visites héliportées, on le reverse dans VH.
  */
+/** Un avancement d'avant les zones : le dernier pylône survolé devient une zone. */
+function migrerVisite(v: unknown, debut: number): AvancementVisite {
+  const a = (v ?? {}) as Record<string, unknown>;
+  if (Array.isArray(a.zones)) return a as unknown as AvancementVisite;
+  const jusqua = a.avancement as number | undefined;
+  const zones: ZoneSurvolee[] =
+    jusqua != null && jusqua > debut
+      ? [
+          {
+            id: nouvelId('z'),
+            debut,
+            fin: jusqua,
+            date: (a.dateFin as string) || (a.dateDebut as string) || undefined,
+          },
+        ]
+      : [];
+  return {
+    statut: (a.statut as StatutLigne) ?? 'a_faire',
+    zones,
+    dateDebut: a.dateDebut as string | undefined,
+    dateFin: a.dateFin as string | undefined,
+    dateMaj: a.dateMaj as string | undefined,
+  };
+}
+
 function migrerSuivi(brut: unknown): SuiviLigne {
   const b = brut as Record<string, unknown>;
-  if (b.visites) return b as unknown as SuiviLigne;
-  const { statut, avancement, dateDebut, dateFin, dateMaj, ...reste } = b;
+  const debut = (b.debut as number) ?? 1;
+  if (b.visites) {
+    const v = b.visites as Record<string, unknown>;
+    return {
+      ...(b as unknown as SuiviLigne),
+      visites: {
+        VH: migrerVisite(v.VH, debut),
+        VTIR: migrerVisite(v.VTIR, debut),
+        LIDAR: migrerVisite(v.LIDAR, debut),
+      },
+    };
+  }
+  const { statut, avancement, dateDebut, dateFin, dateMaj, note, ...reste } = b;
   return {
     ...(reste as unknown as Omit<SuiviLigne, 'visites'>),
     visites: {
-      VH: {
-        statut: (statut as StatutLigne) ?? 'a_faire',
-        avancement: avancement as number | undefined,
-        dateDebut: dateDebut as string | undefined,
-        dateFin: dateFin as string | undefined,
-        dateMaj: dateMaj as string | undefined,
-      },
+      VH: migrerVisite({ statut, avancement, dateDebut, dateFin, dateMaj }, debut),
       VTIR: visiteVide(),
       LIDAR: visiteVide(),
     },
   };
+}
+
+/** Les notes portées par les suivis rejoignent le magasin commun aux campagnes. */
+function extraireNotes(suivis: Record<string, SuiviLigne[]>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const liste of Object.values(suivis ?? {}))
+    for (const s of liste ?? []) {
+      const n = (s as unknown as { note?: string }).note;
+      if (n && !out[s.ligneId]) out[s.ligneId] = n;
+    }
+  return out;
+}
+
+/** Les observations étaient rangées par campagne : on les réunit. */
+function migrerObservations(brut: unknown): Observation[] {
+  if (Array.isArray(brut)) return brut as Observation[];
+  const parId = new Map<string, Observation>();
+  for (const liste of Object.values((brut ?? {}) as Record<string, Observation[]>))
+    for (const o of liste ?? []) parId.set(o.id, o);
+  return [...parId.values()];
 }
 
 function migrerSuivis(
@@ -164,6 +222,8 @@ function lire(): Persiste {
           ...p,
           // un secteur enregistré avant l'ajout des équipes n'a pas le champ eel
           secteur: { ...SECTEUR_VIDE, ...(p.secteur ?? {}) },
+          notes: p.notes ?? extraireNotes(p.suivis),
+          observations: migrerObservations(p.observations),
           suivis: migrerSuivis(p.suivis),
           preparations: p.preparations ?? {},
           helicopteres: p.helicopteres ?? [],
@@ -182,7 +242,8 @@ function lire(): Persiste {
     depts: [],
     secteur: SECTEUR_VIDE,
     suivis: { [c.id]: [] },
-    observations: { [c.id]: [] },
+    notes: {},
+    observations: [],
     preparations: { [c.id]: [] },
     helicopteres: [],
     contactsSeveso: {},
@@ -233,9 +294,26 @@ interface Ctx {
   /** nature de visite que les actions de saisie alimentent */
   natureCourante: NatureVisite;
   setNatureCourante: (n: NatureVisite) => void;
+  /** observations de tous les millésimes : elles se reportent d'une campagne à l'autre */
   observations: Observation[];
   ajouterObservation: (o: Omit<Observation, 'id'>) => void;
   supprimerObservation: (id: string) => void;
+  /** note libre par ouvrage, elle aussi conservée d'une année sur l'autre */
+  note: (ligneId: string) => string;
+  setNote: (ligneId: string, texte: string) => void;
+  /** ajoute une zone survolée à une ligne, pour une nature de visite */
+  ajouterZone: (
+    ligneId: string,
+    nature: NatureVisite,
+    zone: Omit<ZoneSurvolee, 'id'>,
+  ) => void;
+  majZone: (
+    ligneId: string,
+    nature: NatureVisite,
+    zoneId: string,
+    patch: Partial<ZoneSurvolee>,
+  ) => void;
+  supprimerZone: (ligneId: string, nature: NatureVisite, zoneId: string) => void;
 
   ligneActive: string | null;
   setLigneActive: (id: string | null) => void;
@@ -466,7 +544,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const suivisCampagne = etat.suivis[etat.campagneCourante] ?? [];
-  const obsCampagne = etat.observations[etat.campagneCourante] ?? [];
 
   const parLigne = useMemo(() => {
     const m = new Map<string, SuiviLigne>();
@@ -517,21 +594,93 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   );
 
   const ajouterObservation = useCallback((o: Omit<Observation, 'id'>) => {
-    setEtat((s) => {
-      const cid = s.campagneCourante;
-      const liste = s.observations[cid] ?? [];
-      const obs: Observation = { ...o, id: `o${Date.now()}${Math.random().toString(36).slice(2, 6)}` };
-      return { ...s, observations: { ...s.observations, [cid]: [...liste, obs] } };
-    });
+    setEtat((s) => ({
+      ...s,
+      observations: [...s.observations, { ...o, id: nouvelId('o') }],
+    }));
   }, []);
 
   const supprimerObservation = useCallback((id: string) => {
+    setEtat((s) => ({ ...s, observations: s.observations.filter((o) => o.id !== id) }));
+  }, []);
+
+  const note = useCallback((ligneId: string) => etat.notes[ligneId] ?? '', [etat.notes]);
+
+  const setNote = useCallback((ligneId: string, texte: string) => {
     setEtat((s) => {
-      const cid = s.campagneCourante;
-      const liste = s.observations[cid] ?? [];
-      return { ...s, observations: { ...s.observations, [cid]: liste.filter((o) => o.id !== id) } };
+      const notes = { ...s.notes };
+      if (texte.trim()) notes[ligneId] = texte;
+      else delete notes[ligneId];
+      return { ...s, notes };
     });
   }, []);
+
+  /** Applique une transformation aux zones d'une nature de visite. */
+  const transformerZones = useCallback(
+    (ligneId: string, nature: NatureVisite, f: (z: ZoneSurvolee[]) => ZoneSurvolee[]) => {
+      setEtat((s) => {
+        const cid = s.campagneCourante;
+        const liste = s.suivis[cid] ?? [];
+        const idx = liste.findIndex((x) => x.ligneId === ligneId);
+        const base: SuiviLigne = idx >= 0 ? liste[idx] : suiviVide(ligneId);
+        const visite = base.visites[nature];
+        const zones = f(visite.zones).sort((a, b) => a.debut - b.debut);
+        const maj: SuiviLigne = {
+          ...base,
+          visites: {
+            ...base.visites,
+            [nature]: {
+              ...visite,
+              zones,
+              // une ligne sans zone retombe à faire, une ligne qui en a est en cours
+              statut:
+                visite.statut === 'hors_perimetre' || visite.statut === 'fait'
+                  ? visite.statut
+                  : zones.length
+                    ? 'en_cours'
+                    : 'a_faire',
+              dateMaj: new Date().toISOString(),
+            },
+          },
+        };
+        const nouvelle = idx >= 0 ? liste.map((x, i) => (i === idx ? maj : x)) : [...liste, maj];
+        return { ...s, suivis: { ...s.suivis, [cid]: nouvelle } };
+      });
+    },
+    [],
+  );
+
+  const ajouterZone = useCallback(
+    (ligneId: string, nature: NatureVisite, zone: Omit<ZoneSurvolee, 'id'>) =>
+      transformerZones(ligneId, nature, (z) => [
+        ...z,
+        {
+          ...zone,
+          id: nouvelId('z'),
+          debut: Math.min(zone.debut, zone.fin),
+          fin: Math.max(zone.debut, zone.fin),
+        },
+      ]),
+    [transformerZones],
+  );
+
+  const majZone = useCallback(
+    (ligneId: string, nature: NatureVisite, zoneId: string, patch: Partial<ZoneSurvolee>) =>
+      transformerZones(ligneId, nature, (z) =>
+        z.map((x) => {
+          if (x.id !== zoneId) return x;
+          const maj = { ...x, ...patch };
+          return { ...maj, debut: Math.min(maj.debut, maj.fin), fin: Math.max(maj.debut, maj.fin) };
+        }),
+      ),
+    [transformerZones],
+  );
+
+  const supprimerZone = useCallback(
+    (ligneId: string, nature: NatureVisite, zoneId: string) =>
+      transformerZones(ligneId, nature, (z) => z.filter((x) => x.id !== zoneId)),
+    [transformerZones],
+  );
 
   const setCampagneCourante = useCallback((id: string) => {
     setEtat((s) => ({ ...s, campagneCourante: id }));
@@ -551,7 +700,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         campagnes: [...s.campagnes, c],
         campagneCourante: c.id,
         suivis: { ...s.suivis, [c.id]: [] },
-        observations: { ...s.observations, [c.id]: [] },
         preparations: { ...s.preparations, [c.id]: [] },
         taches: { ...s.taches, [c.id]: {} },
       };
@@ -570,7 +718,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (s.campagnes.length <= 1) return s;
       const campagnes = s.campagnes.filter((c) => c.id !== id);
       const { [id]: _a, ...suivis } = s.suivis;
-      const { [id]: _b, ...observations } = s.observations;
       const { [id]: _c, ...preparations } = s.preparations;
       const { [id]: _d, ...taches } = s.taches;
       return {
@@ -578,7 +725,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         campagnes,
         campagneCourante: s.campagneCourante === id ? campagnes[0].id : s.campagneCourante,
         suivis,
-        observations,
         preparations,
         taches,
       };
@@ -591,7 +737,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const creerPreparation = useCallback(
     (annee: number, semaine: number, typeVol: TypeVol): string => {
-      const id = `p${Date.now()}${Math.random().toString(36).slice(2, 5)}`;
+      const id = nouvelId('p');
       setEtat((s) => {
         const cid = s.campagneCourante;
         const prepa: Preparation = {
@@ -653,7 +799,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (!src) return s;
       const copie: Preparation = {
         ...JSON.parse(JSON.stringify(src)),
-        id: `p${Date.now()}${Math.random().toString(36).slice(2, 5)}`,
+        id: nouvelId('p'),
         creeLe: new Date().toISOString(),
       };
       return { ...s, preparations: { ...s.preparations, [cid]: [...liste, copie] } };
@@ -668,7 +814,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         if (c[demi].some((v) => v.ligneId === vol.ligneId)) return p;
         const nouveau: VolLigne = {
           ...vol,
-          id: `v${Date.now()}${Math.random().toString(36).slice(2, 5)}`,
+          id: nouvelId('v'),
         };
         return {
           ...p,
@@ -776,6 +922,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       exporteLe: new Date().toISOString(),
       campagnes: etat.campagnes,
       suivis: etat.suivis,
+      notes: etat.notes,
       observations: etat.observations,
       preparations: etat.preparations,
       helicopteres: etat.helicopteres,
@@ -804,7 +951,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         ...cur,
         campagnes: [...parId.values()],
         suivis: { ...cur.suivis, ...migrerSuivis(s.suivis) },
-        observations: { ...cur.observations, ...s.observations },
+        notes: { ...cur.notes, ...(s.notes ?? {}) },
+        observations: (() => {
+          const parId = new Map(cur.observations.map((o) => [o.id, o]));
+          for (const o of migrerObservations(s.observations)) parId.set(o.id, o);
+          return [...parId.values()];
+        })(),
         preparations: { ...cur.preparations, ...(s.preparations ?? {}) },
         helicopteres: fusionnerHelicos(cur.helicopteres, s.helicopteres ?? []),
         contactsSeveso: { ...cur.contactsSeveso, ...(s.contactsSeveso ?? {}) },
@@ -842,7 +994,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     majVisite,
     natureCourante,
     setNatureCourante,
-    observations: obsCampagne,
+    observations: etat.observations,
+    note,
+    setNote,
+    ajouterZone,
+    majZone,
+    supprimerZone,
     ajouterObservation,
     supprimerObservation,
     ligneActive,
@@ -893,25 +1050,82 @@ export interface Avancement {
   pourcent: number;
 }
 
+/** Intervalle de rangs de pylônes. */
+export interface Portion {
+  debut: number;
+  fin: number;
+}
+
+/** Zones survolées, bornées au périmètre et fusionnées quand elles se recouvrent. */
+export function portionsFaites(
+  ligne: Ligne,
+  s: SuiviLigne,
+  nature: NatureVisite = 'VH',
+): Portion[] {
+  const n = ligne.pylones.length;
+  const debut = Math.min(Math.max(s.debut ?? 1, 1), n);
+  const fin = Math.min(Math.max(s.fin ?? n, debut), n);
+  const v = s.visites[nature];
+  if (v.statut === 'hors_perimetre') return [];
+  if (v.statut === 'fait') return debut < fin ? [{ debut, fin }] : [];
+
+  const bornees = v.zones
+    .map((z) => ({
+      debut: Math.max(Math.min(z.debut, z.fin), debut),
+      fin: Math.min(Math.max(z.debut, z.fin), fin),
+    }))
+    .filter((z) => z.fin > z.debut)
+    .sort((a, b) => a.debut - b.debut);
+
+  const out: Portion[] = [];
+  for (const z of bornees) {
+    const dernier = out[out.length - 1];
+    if (dernier && z.debut <= dernier.fin) dernier.fin = Math.max(dernier.fin, z.fin);
+    else out.push({ ...z });
+  }
+  return out;
+}
+
+/** Ce qui reste à survoler : le complément des zones faites dans le périmètre. */
+export function lacunes(ligne: Ligne, s: SuiviLigne, nature: NatureVisite = 'VH'): Portion[] {
+  const n = ligne.pylones.length;
+  const debut = Math.min(Math.max(s.debut ?? 1, 1), n);
+  const fin = Math.min(Math.max(s.fin ?? n, debut), n);
+  if (s.visites[nature].statut === 'hors_perimetre' || fin <= debut) return [];
+
+  const out: Portion[] = [];
+  let curseur = debut;
+  for (const p of portionsFaites(ligne, s, nature)) {
+    if (p.debut > curseur) out.push({ debut: curseur, fin: p.debut });
+    curseur = Math.max(curseur, p.fin);
+  }
+  if (curseur < fin) out.push({ debut: curseur, fin });
+  return out;
+}
+
+/** Longueur d'une portion, en kilomètres. */
+export function kmPortion(ligne: Ligne, p: Portion): number {
+  const a = ligne.pylones[p.debut - 1]?.d ?? 0;
+  const b = ligne.pylones[p.fin - 1]?.d ?? a;
+  return Math.max(b - a, 0);
+}
+
 export function calculerAvancement(
   ligne: Ligne,
   s: SuiviLigne,
   nature: NatureVisite = 'VH',
 ): Avancement {
   const n = ligne.pylones.length;
-  const v = s.visites[nature];
   const debut = Math.min(Math.max(s.debut ?? 1, 1), n);
   const fin = Math.min(Math.max(s.fin ?? n, debut), n);
   const dDebut = ligne.pylones[debut - 1]?.d ?? 0;
   const dFin = ligne.pylones[fin - 1]?.d ?? ligne.km;
   const kmPerimetre = Math.max(dFin - dDebut, 0);
 
-  let kmFaits = 0;
-  if (v.statut === 'fait') kmFaits = kmPerimetre;
-  else if (v.avancement != null) {
-    const a = Math.min(Math.max(v.avancement, debut), fin);
-    kmFaits = Math.max((ligne.pylones[a - 1]?.d ?? dDebut) - dDebut, 0);
-  }
+  const kmFaits = portionsFaites(ligne, s, nature).reduce(
+    (a, p) => a + kmPortion(ligne, p),
+    0,
+  );
 
   return {
     debut,
@@ -921,19 +1135,6 @@ export function calculerAvancement(
     kmRestants: Math.max(kmPerimetre - kmFaits, 0),
     pourcent: kmPerimetre > 0 ? (kmFaits / kmPerimetre) * 100 : 0,
   };
-}
-
-/** Rang du dernier pylône survolé pour une nature, borné au périmètre. */
-export function dernierPyloneFait(
-  ligne: Ligne,
-  s: SuiviLigne,
-  nature: NatureVisite,
-): number | null {
-  const v = s.visites[nature];
-  const a = calculerAvancement(ligne, s, nature);
-  if (v.statut === 'fait') return a.fin;
-  if (v.avancement == null) return null;
-  return Math.min(Math.max(v.avancement, a.debut), a.fin);
 }
 
 /**

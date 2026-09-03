@@ -5,7 +5,7 @@ import type { Ligne, Poste, Pylone } from '../types';
 import {
   calculerAvancement,
   codeAffiche,
-  dernierPyloneFait,
+  portionsFaites,
   nomAffiche,
   useStore,
 } from '../state/store';
@@ -168,21 +168,18 @@ export default function MapView({
         }).addTo(g);
       }
 
-      /** Points du tracé entre le début du périmètre et un rang donné. */
-      const portion = (jusqua: number | null) => {
-        if (jusqua == null) return [];
-        const a = calculerAvancement(l, s);
-        return l.pylones
-          .filter((p) => p.i >= a.debut && p.i <= jusqua)
-          .map((p) => [p.lat, p.lon] as [number, number]);
-      };
-      const ptsVh = portion(dernierPyloneFait(l, s, 'VH'));
-      const ptsVtir = portion(dernierPyloneFait(l, s, 'VTIR'));
+      /** Points du tracé entre deux rangs de pylônes. */
+      const points = (p: { debut: number; fin: number }) =>
+        l.pylones
+          .filter((x) => x.i >= p.debut && x.i <= p.fin)
+          .map((x) => [x.lat, x.lon] as [number, number]);
+      const zonesVh = portionsFaites(l, s, 'VH').map(points).filter((p) => p.length > 1);
+      const zonesVtir = portionsFaites(l, s, 'VTIR').map(points).filter((p) => p.length > 1);
       const horsPerimetre = vh.statut === 'hors_perimetre';
 
       // 1. VTIR : trait large posé sous la ligne, dont les bords resteront visibles
-      if (ptsVtir.length > 1 && !horsPerimetre) {
-        L.polyline(ptsVtir, {
+      for (const pts of horsPerimetre ? [] : zonesVtir) {
+        L.polyline(pts, {
           color: couleur(l.tension),
           weight: epaisseur(l.tension) + 6,
           opacity: 0.95,
@@ -214,18 +211,18 @@ export default function MapView({
       if (horsPerimetre) continue;
 
       // 3. cœur clair : évidé, le trait large du VTIR se lit comme deux lignes
-      if (ptsVtir.length > 1) {
-        L.polyline(ptsVtir, {
+      for (const pts of zonesVtir) {
+        L.polyline(pts, {
           color: '#ffffff',
           weight: epaisseur(l.tension) + 1.5,
           opacity: 1,
         }).addTo(g);
       }
 
-      // 4. VH : ce qui est survolé s'efface en vert clair, moins large que le
+      // 4. VH : chaque zone survolée s'efface en vert clair, moins large que le
       //    trait VTIR pour que les deux informations cohabitent
-      if (ptsVh.length > 1) {
-        L.polyline(ptsVh, {
+      for (const pts of zonesVh) {
+        L.polyline(pts, {
           color: '#86efac',
           weight: epaisseur(l.tension) + 2.5,
           opacity: 0.8,
@@ -309,8 +306,7 @@ export default function MapView({
       const av = calculerAvancement(l, s);
       const frontiere = p.i === s.debut || p.i === s.fin;
       // l'état d'un pylône reflète la visite héliportée, seule à porter l'avancement
-      const dernier = dernierPyloneFait(l, s, 'VH');
-      const fait = dernier != null && p.i >= av.debut && p.i <= dernier;
+      const fait = portionsFaites(l, s, 'VH').some((z) => p.i >= z.debut && p.i <= z.fin);
       const hors = p.i < av.debut || p.i > av.fin;
 
       const m = L.circleMarker([p.lat, p.lon], {

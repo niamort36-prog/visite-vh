@@ -1802,3 +1802,74 @@ th.col-agglo {
   background: #5b21b6;
   border-color: #5b21b6;
 }
+
+/* ---------------------------------------------------------------- */
+/* Zones survolées et lacunes                                        */
+/* ---------------------------------------------------------------- */
+
+.zones,
+.lacunes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.zones li {
+  border: 1px solid var(--bord);
+  border-left: 3px solid var(--ok);
+  border-radius: var(--rayon);
+  padding: 5px 8px;
+  background: #f6fdf8;
+}
+.zone-bornes {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.zone-bornes select {
+  flex: 1;
+  min-width: 0;
+  padding: 3px 4px;
+}
+.zone-bornes .zone-date {
+  width: auto;
+  flex: none;
+  padding: 3px 4px;
+}
+.fleche-zone {
+  color: var(--texte-doux);
+  flex: none;
+}
+.zone-bornes .supprimer {
+  position: static;
+  flex: none;
+}
+.zone-mesure {
+  font-size: 11px;
+  color: var(--texte-doux);
+  margin-top: 2px;
+}
+
+.lacunes li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  border: 1px solid #fed7aa;
+  border-left: 3px solid var(--reste);
+  border-radius: var(--rayon);
+  padding: 4px 8px;
+  background: #fffaf5;
+  font-size: 12px;
+}
+.lacune-km {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  color: var(--reste);
+  font-weight: 600;
+}
+
+.bandeau-zone {
+  background: #15803d;
+}

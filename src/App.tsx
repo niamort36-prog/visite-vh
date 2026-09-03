@@ -32,7 +32,7 @@ export default function App() {
     setLigneActive,
     erreur,
     majSuivi,
-    majVisite,
+    ajouterZone,
     natureCourante,
     suivi,
     ajouterObservation,
@@ -53,6 +53,13 @@ export default function App() {
   });
   const [selection, setSelection] = useState<Selection | null>(null);
   const [tachesOuvertes, setTachesOuvertes] = useState(false);
+  // saisie d'une zone survolée en deux clics sur la carte
+  const [zoneEnCours, setZoneEnCours] = useState<{
+    ligneId: string;
+    ligneNom: string;
+    debut: number;
+    debutNum: string;
+  } | null>(null);
 
   const ligne = lignes.find((l) => l.id === ligneActive) ?? null;
 
@@ -237,6 +244,16 @@ export default function App() {
             onLigneSelection={selection ? selectionCarte : undefined}
             lignesPrepa={lignesPrepa}
           />
+          {zoneEnCours && (
+            <div className="bandeau-selection bandeau-zone">
+              <span>
+                Zone survolée sur <b>{zoneEnCours.ligneNom}</b> — début au pylône{' '}
+                <b>{zoneEnCours.debutNum}</b>, cliquez le pylône de fin.
+              </span>
+              <button onClick={() => setZoneEnCours(null)}>Annuler</button>
+            </div>
+          )}
+
           {selection && prepa && (
             <div className="bandeau-selection">
               <span>
@@ -285,25 +302,45 @@ export default function App() {
             >
               Frontière fin
             </button>
-            <button
-              className="principal"
-              onClick={() => {
-                const v = suivi(actionPylone.ligne.id).visites[natureCourante];
-                majVisite(actionPylone.ligne.id, natureCourante, {
-                  avancement: actionPylone.pylone.i,
-                  statut: v.statut === 'a_faire' ? 'en_cours' : v.statut,
-                  dateDebut: v.dateDebut ?? aujourdhui(),
-                });
-                setActionPylone(null);
-              }}
-              title={`Enregistré sur le suivi ${natureCourante}`}
-            >
-              Fait jusqu'ici
-              <small>
-                {' '}
-                {NATURES.find((n) => n.cle === natureCourante)?.court}
-              </small>
-            </button>
+            {zoneEnCours && zoneEnCours.ligneId === actionPylone.ligne.id ? (
+              <button
+                className="principal"
+                onClick={() => {
+                  ajouterZone(actionPylone.ligne.id, natureCourante, {
+                    debut: zoneEnCours.debut,
+                    fin: actionPylone.pylone.i,
+                    date: aujourdhui(),
+                  });
+                  setZoneEnCours(null);
+                  setActionPylone(null);
+                }}
+                title={`Zone enregistrée sur le suivi ${natureCourante}`}
+              >
+                Fin de zone
+                <small> depuis {zoneEnCours.debutNum}</small>
+              </button>
+            ) : (
+              <button
+                className="principal"
+                onClick={() => {
+                  setZoneEnCours({
+                    ligneId: actionPylone.ligne.id,
+                    ligneNom: nomAffiche(
+                      actionPylone.ligne,
+                      suivi(actionPylone.ligne.id),
+                      rattachement(actionPylone.ligne.id),
+                    ),
+                    debut: actionPylone.pylone.i,
+                    debutNum: actionPylone.pylone.num,
+                  });
+                  setActionPylone(null);
+                }}
+                title={`Début d'une zone survolée en ${natureCourante}`}
+              >
+                Début de zone
+                <small> {NATURES.find((n) => n.cle === natureCourante)?.court}</small>
+              </button>
+            )}
             <button
               onClick={() => {
                 const texte = window.prompt(
