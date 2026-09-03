@@ -1911,3 +1911,125 @@ th.col-agglo {
   color: #92400e;
   text-decoration: underline;
 }
+
+/* ---------------------------------------------------------------- */
+/* Dossier de préparation, zones de poser et trajets de liaison      */
+/* ---------------------------------------------------------------- */
+
+.volets {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--bord);
+  padding-bottom: 6px;
+}
+.volets button {
+  flex: 1;
+  padding: 5px 8px;
+  border: 1px solid var(--bord);
+  background: #fff;
+  border-radius: var(--rayon);
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--texte-doux);
+  font-size: 12px;
+}
+.volets button.actif {
+  background: var(--marine);
+  border-color: var(--marine);
+  color: #fff;
+}
+.volets .badge {
+  margin-left: 5px;
+  background: #ffd166;
+  color: #0b2545;
+  border-radius: 9px;
+  padding: 0 5px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.col-sens select {
+  min-width: 90px;
+  max-width: 130px;
+}
+td.liaison small {
+  display: block;
+  color: var(--texte-doux);
+  font-size: 10px;
+}
+
+.retour-dz {
+  padding: 5px 9px;
+  background: #eef2f7;
+  border-top: 1px solid var(--bord);
+  font-size: 11px;
+  color: var(--texte-doux);
+}
+
+.dz-groupe {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.dz-gmr {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: #3730a3;
+}
+.dz-liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.dz-liste li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--bord);
+  border-left: 3px solid #0f766e;
+  border-radius: var(--rayon);
+  padding: 3px 6px;
+  background: #f0fdfa;
+}
+.dz-liste .cellule {
+  flex: 1;
+  min-width: 0;
+}
+.dz-coord {
+  font-size: 10px;
+  color: var(--texte-doux);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.dz-liste .supprimer {
+  position: static;
+  flex: none;
+}
+
+.marqueur-dz {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.marqueur-dz span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #0f766e;
+  color: #fff;
+  font-weight: 700;
+  font-size: 12px;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+.bandeau-dz {
+  background: #0f766e;
+}

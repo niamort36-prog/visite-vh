@@ -58,3 +58,17 @@ export function natureDuTypeVol(t: TypeVol): NatureVisite {
   if (t === 'LIDAR') return 'LIDAR';
   return 'VH';
 }
+
+/** Vitesse de transit entre la zone de poser et les ouvrages, en km/h. */
+export const VITESSE_TRANSIT = 200;
+
+/**
+ * Durée d'un trajet de liaison, à la minute près. Contrairement au temps de
+ * visite, qui n'est qu'un ordre de grandeur arrondi au quart d'heure près, une
+ * liaison de quelques kilomètres doit rester visible : l'arrondi aux 5 minutes
+ * l'afficherait à zéro.
+ */
+export function dureeTransit(km: number, vitesse: number): number {
+  if (!vitesse || km <= 0) return 0;
+  return Math.max(1, Math.round((km / vitesse) * 60));
+}

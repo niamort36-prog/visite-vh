@@ -33,6 +33,7 @@ export default function App() {
     erreur,
     majSuivi,
     ajouterZone,
+    ajouterZoneDePoser,
     natureCourante,
     suivi,
     ajouterObservation,
@@ -54,6 +55,8 @@ export default function App() {
   const [selection, setSelection] = useState<Selection | null>(null);
   const [tachesOuvertes, setTachesOuvertes] = useState(false);
   // saisie d'une zone survolée en deux clics sur la carte
+  // placement d'une zone de poser : nom et GMR retenus, en attente d'un clic carte
+  const [placementDz, setPlacementDz] = useState<{ nom: string; gmr: string } | null>(null);
   const [zoneEnCours, setZoneEnCours] = useState<{
     ligneId: string;
     ligneNom: string;
@@ -183,7 +186,13 @@ export default function App() {
           </nav>
 
           <div className="panneau-contenu">
-            {onglet === 'secteur' && <SecteurPanel />}
+            {onglet === 'secteur' && (
+              <SecteurPanel
+                placementDz={placementDz}
+                onPlacerDz={(nom, gmr) => setPlacementDz({ nom, gmr })}
+                onAnnulerDz={() => setPlacementDz(null)}
+              />
+            )}
             {onglet === 'lignes' && (
               <LignesTable onOuvrir={ouvrirLigne} />
             )}
@@ -243,7 +252,23 @@ export default function App() {
             onPyloneClic={onPyloneClic}
             onLigneSelection={selection ? selectionCarte : undefined}
             lignesPrepa={lignesPrepa}
+            onPositionClic={
+              placementDz
+                ? (lat, lon) => {
+                    ajouterZoneDePoser({ ...placementDz, lat, lon });
+                    setPlacementDz(null);
+                  }
+                : undefined
+            }
           />
+          {placementDz && (
+            <div className="bandeau-selection bandeau-dz">
+              <span>
+                Zone de poser <b>{placementDz.nom}</b> — cliquez sa position sur la carte.
+              </span>
+              <button onClick={() => setPlacementDz(null)}>Annuler</button>
+            </div>
+          )}
           {zoneEnCours && (
             <div className="bandeau-selection bandeau-zone">
               <span>

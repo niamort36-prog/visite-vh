@@ -26,6 +26,7 @@ import type {
   SuiviLigne,
   TypeVol,
   VolLigne,
+  ZoneDePoser,
   ZoneSurvolee,
 } from '../types';
 import { natureDuTypeVol, vitesseParDefaut } from '../lib/vols';
@@ -71,6 +72,8 @@ interface Persiste {
   preparations: Record<string, Preparation[]>;
   /** flotte connue, commune à toutes les campagnes */
   helicopteres: Helicoptere[];
+  /** zones de poser, une ou plusieurs par GMR */
+  zonesDePoser: ZoneDePoser[];
   /** coordonnées des sites Seveso, saisies par l'exploitant, par identifiant AIOT */
   contactsSeveso: Record<string, ContactSeveso>;
   /**
@@ -272,6 +275,7 @@ function lire(): Persiste {
           suivis: migrerSuivis(p.suivis),
           preparations: p.preparations ?? {},
           helicopteres: p.helicopteres ?? [],
+          zonesDePoser: p.zonesDePoser ?? [],
           contactsSeveso: p.contactsSeveso ?? {},
           aggloManuel: p.aggloManuel ?? {},
           taches: p.taches ?? {},
@@ -291,6 +295,7 @@ function lire(): Persiste {
     observations: [],
     preparations: { [c.id]: [] },
     helicopteres: [],
+    zonesDePoser: [],
     contactsSeveso: {},
     aggloManuel: {},
     taches: { [c.id]: {} },
@@ -398,6 +403,11 @@ interface Ctx {
   helicopteres: Helicoptere[];
   ajouterHelicoptere: (h: Omit<Helicoptere, 'id'>) => void;
   supprimerHelicoptere: (id: string) => void;
+
+  zonesDePoser: ZoneDePoser[];
+  ajouterZoneDePoser: (z: Omit<ZoneDePoser, 'id'>) => void;
+  majZoneDePoser: (id: string, patch: Partial<ZoneDePoser>) => void;
+  supprimerZoneDePoser: (id: string) => void;
 
   contactsSeveso: Record<string, ContactSeveso>;
   majContactSeveso: (id: string, patch: ContactSeveso) => void;
@@ -960,6 +970,26 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setEtat((s) => ({ ...s, helicopteres: s.helicopteres.filter((h) => h.id !== id) }));
   }, []);
 
+  const ajouterZoneDePoser = useCallback((z: Omit<ZoneDePoser, 'id'>) => {
+    setEtat((s) => ({
+      ...s,
+      zonesDePoser: [...s.zonesDePoser, { ...z, id: nouvelId('dz') }].sort((a, b) =>
+        (a.gmr + a.nom).localeCompare(b.gmr + b.nom, 'fr'),
+      ),
+    }));
+  }, []);
+
+  const majZoneDePoser = useCallback((id: string, patch: Partial<ZoneDePoser>) => {
+    setEtat((s) => ({
+      ...s,
+      zonesDePoser: s.zonesDePoser.map((z) => (z.id === id ? { ...z, ...patch } : z)),
+    }));
+  }, []);
+
+  const supprimerZoneDePoser = useCallback((id: string) => {
+    setEtat((s) => ({ ...s, zonesDePoser: s.zonesDePoser.filter((z) => z.id !== id) }));
+  }, []);
+
   const majTache = useCallback((tacheId: string, patch: Partial<EtatTache>) => {
     setEtat((s) => {
       const cid = s.campagneCourante;
@@ -999,6 +1029,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       observations: etat.observations,
       preparations: etat.preparations,
       helicopteres: etat.helicopteres,
+      zonesDePoser: etat.zonesDePoser,
       contactsSeveso: etat.contactsSeveso,
       aggloManuel: etat.aggloManuel,
       taches: etat.taches,
@@ -1032,6 +1063,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         })(),
         preparations: { ...cur.preparations, ...(s.preparations ?? {}) },
         helicopteres: fusionnerHelicos(cur.helicopteres, s.helicopteres ?? []),
+        zonesDePoser: (() => {
+          const parId = new Map(cur.zonesDePoser.map((z) => [z.id, z]));
+          for (const z of s.zonesDePoser ?? []) parId.set(z.id, z);
+          return [...parId.values()];
+        })(),
         contactsSeveso: { ...cur.contactsSeveso, ...(s.contactsSeveso ?? {}) },
         aggloManuel: { ...cur.aggloManuel, ...(s.aggloManuel ?? {}) },
         taches: { ...cur.taches, ...(s.taches ?? {}) },
@@ -1092,6 +1128,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     helicopteres: etat.helicopteres,
     ajouterHelicoptere,
     supprimerHelicoptere,
+    zonesDePoser: etat.zonesDePoser,
+    ajouterZoneDePoser,
+    majZoneDePoser,
+    supprimerZoneDePoser,
     contactsSeveso: etat.contactsSeveso,
     majContactSeveso,
     aggloManuel: etat.aggloManuel,

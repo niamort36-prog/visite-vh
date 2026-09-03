@@ -68,6 +68,14 @@ compte, et reste utilisable **hors connexion** une fois le secteur chargé.
   décoche** : on ajoute une agglomération que les données ont manquée, on retire celle qui
   est de trop. Une valeur corrigée porte un liseré orange et se rétablit d'un clic depuis le
   panneau *Ouvrage*. Ces corrections valent pour toutes les campagnes et suivent l'export.
+- **Zones de poser** : une ou plusieurs par GMR, placées d'un clic sur la carte. Une
+  préparation en désigne une : elle sert de point de départ le matin et de retour en fin de
+  journée.
+- **Trajets de liaison** : dans le planning, chaque ouvrage indique par quelle extrémité
+  commence la visite, et l'application calcule le trajet depuis le point précédent — la zone
+  de poser pour le premier vol, la fin de l'ouvrage précédent ensuite — à **200 km/h par
+  défaut**, vitesse modifiable. Ces liaisons s'ajoutent au temps de visite, retour à la zone
+  de poser compris, pour donner la durée réelle de la journée.
 - **Échéances** : une fenêtre récapitule les démarches à effectuer, avec leur date limite,
   déduites du secteur et des préparations. Les retards apparaissent en rouge, les échéances
   sous quinze jours en orange, et le bouton de l'en-tête porte le nombre de tâches ouvertes.
@@ -81,9 +89,10 @@ compte, et reste utilisable **hors connexion** une fois le secteur chargé.
   | Consultation des activations AZBA et R368 (zone centre) | 1 semaine avant |
   | Envoi de la préparation aux groupements de postes | 1 semaine avant |
 
-  Les échéances propres à une semaine de vol sont **reprises dans la préparation
-  elle-même**, sous le bloc équipage, avec le nombre de démarches encore à faire. C'est le
-  même état des deux côtés : cocher ici ou là revient au même.
+  Une préparation s'ouvre comme un dossier à deux volets — **Planning** et **Échéances** — ce
+  qui garde l'écran de composition du planning dégagé. Le volet Échéances reprend les
+  démarches propres à la semaine, avec le nombre de celles encore à faire ; c'est le même
+  état que dans la fenêtre générale, cocher ici ou là revient au même.
 
 - **Secteur par centre de maintenance, GMR et équipe** : une fois le référentiel RTE importé,
   le secteur de travail se choisit dans des menus déroulants — le CM, puis un ou plusieurs
@@ -222,6 +231,7 @@ src/lib/semaines.ts        calendrier ISO 8601 (semaines, jours, libellés)
 src/lib/vols.ts            types de vol, domaines de tension, temps de visite
 src/lib/notam.ts           terrains concernés par un vol (distance au tracé)
 src/lib/taches.ts          échéances de campagne déduites du secteur et des préparations
+src/lib/trajets.ts         enchaînement d'une journée : liaisons, sens de visite, retour DZ
 src/state/useTaches.ts     calcul partagé des échéances (en-tête, fenêtre, préparation)
 src/ui/                    panneaux secteur, tableau des lignes, détail d'ouvrage,
                            préparations de vol et planning par demi-journée

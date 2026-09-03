@@ -3,13 +3,20 @@ import { useStore } from '../state/store';
 import { km, octets, tuilesPourBbox } from '../lib/geo';
 import { COUCHE_AERO, FONDS_TELECHARGEABLES, urlTuile } from '../map/fonds';
 import ReferentielPanel from './ReferentielPanel';
+import ZonesDePoserPanel from './ZonesDePoserPanel';
 
 /**
  * Choix du secteur de travail — centre de maintenance et GMR — et mise à
  * disposition hors ligne. Le découpage administratif ne sert qu'en dernier
  * recours, tant qu'aucun référentiel RTE n'a été importé.
  */
-export default function SecteurPanel() {
+interface Props {
+  placementDz: { nom: string; gmr: string } | null;
+  onPlacerDz: (nom: string, gmr: string) => void;
+  onAnnulerDz: () => void;
+}
+
+export default function SecteurPanel({ placementDz, onPlacerDz, onAnnulerDz }: Props) {
   const {
     index,
     depts,
@@ -319,6 +326,14 @@ export default function SecteurPanel() {
             ))}
           </div>
         </>
+      )}
+
+      {referentiel && (
+        <ZonesDePoserPanel
+          onPlacer={onPlacerDz}
+          enPlacement={Boolean(placementDz)}
+          onAnnuler={onAnnulerDz}
+        />
       )}
 
       {selection.length > 0 && (

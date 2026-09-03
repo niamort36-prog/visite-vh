@@ -45,6 +45,8 @@ export interface CibleCarte {
 interface Props {
   /** ligne à cadrer, pilotée depuis le tableau */
   cible: CibleCarte | null;
+  /** quand il est fourni, un clic sur la carte renvoie la position pointée */
+  onPositionClic?: (lat: number, lon: number) => void;
   onPyloneClic: (ligne: Ligne, pylone: Pylone) => void;
   /** quand il est fourni, un clic sur une ligne l'ajoute à la préparation en cours */
   onLigneSelection?: (ligne: Ligne) => void;
@@ -57,9 +59,19 @@ export default function MapView({
   onPyloneClic,
   onLigneSelection,
   lignesPrepa,
+  onPositionClic,
 }: Props) {
-  const { lignesAffichees: lignes, postes, suivi, ligneActive, setLigneActive, depts, rattachement, filtres } =
-    useStore();
+  const {
+    lignesAffichees: lignes,
+    postes,
+    suivi,
+    ligneActive,
+    setLigneActive,
+    depts,
+    rattachement,
+    filtres,
+    zonesDePoser,
+  } = useStore();
   const conteneur = useRef<HTMLDivElement>(null);
   const carte = useRef<L.Map | null>(null);
   const coucheLignes = useRef<L.LayerGroup | null>(null);
@@ -70,6 +82,9 @@ export default function MapView({
   // changement de créneau de destination
   const selectionCourante = useRef(onLigneSelection);
   selectionCourante.current = onLigneSelection;
+  const positionCourante = useRef(onPositionClic);
+  positionCourante.current = onPositionClic;
+  const coucheDz = useRef<L.LayerGroup | null>(null);
   const marqueurGps = useRef<L.CircleMarker | null>(null);
   const dernierSecteur = useRef<string>('');
   const [zoom, setZoom] = useState(8);
@@ -119,6 +134,12 @@ export default function MapView({
 
     coucheLignes.current = L.layerGroup().addTo(m);
     couchePrepa.current = L.layerGroup().addTo(m);
+    coucheDz.current = L.layerGroup().addTo(m);
+
+    // placement d'une zone de poser : le prochain clic sur le fond donne la position
+    m.on('click', (e: L.LeafletMouseEvent) => {
+      positionCourante.current?.(e.latlng.lat, e.latlng.lng);
+    });
     couchePylones.current = L.layerGroup().addTo(m);
     couchePostes.current = L.layerGroup().addTo(m);
 
@@ -248,6 +269,25 @@ export default function MapView({
       }).addTo(g);
     }
   }, [lignes, lignesPrepa]);
+
+  /* ---- zones de poser ---------------------------------------------- */
+  useEffect(() => {
+    const g = coucheDz.current;
+    if (!g) return;
+    g.clearLayers();
+    for (const z of zonesDePoser) {
+      L.marker([z.lat, z.lon], {
+        icon: L.divIcon({
+          className: 'marqueur-dz',
+          html: `<span>H</span>`,
+          iconSize: [22, 22],
+          iconAnchor: [11, 11],
+        }),
+      })
+        .bindTooltip(`<b>${z.nom}</b><br>Zone de poser · ${z.gmr}`, { direction: 'top' })
+        .addTo(g);
+    }
+  }, [zonesDePoser]);
 
   /* ---- postes ----------------------------------------------------- */
   useEffect(() => {

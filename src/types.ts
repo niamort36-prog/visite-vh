@@ -177,6 +177,7 @@ export interface Sauvegarde {
   observations: Observation[] | Record<string, Observation[]>;
   preparations?: Record<string, Preparation[]>;
   helicopteres?: Helicoptere[];
+  zonesDePoser?: ZoneDePoser[];
   contactsSeveso?: Record<string, ContactSeveso>;
   aggloManuel?: Record<string, boolean>;
   taches?: Record<string, Record<string, EtatTache>>;
@@ -198,6 +199,20 @@ export interface Helicoptere {
   turbines?: 1 | 2;
 }
 
+/**
+ * Zone de poser : l'endroit d'où l'hélicoptère décolle le matin et où il se pose
+ * en fin de journée. Chaque GMR a la sienne, parfois plusieurs.
+ */
+export interface ZoneDePoser {
+  id: string;
+  nom: string;
+  /** GMR de rattachement */
+  gmr: string;
+  lat: number;
+  lon: number;
+  note?: string;
+}
+
 /** Une ligne du planning : un ouvrage à survoler dans une demi-journée. */
 export interface VolLigne {
   id: string;
@@ -209,6 +224,11 @@ export interface VolLigne {
   km: number;
   /** durée saisie à la main ; sinon elle découle des km et de la vitesse */
   dureeMin?: number;
+  /**
+   * Extrémité par laquelle commence la visite : « AB » part du pylône frontière
+   * de début, « BA » de celui de fin. Détermine les trajets de liaison.
+   */
+  sens?: 'AB' | 'BA';
   commentaire?: string;
 }
 
@@ -228,6 +248,10 @@ export interface Preparation {
   typeVol: TypeVol;
   /** vitesse moyenne de progression retenue, en km/h */
   vitesse: number;
+  /** vitesse de transit entre la zone de poser et les ouvrages, en km/h */
+  vitesseTransit?: number;
+  /** zone de poser d'où part et où revient l'appareil */
+  dzId?: string;
   oan?: string;
   pilote?: string;
   immatriculation?: string;

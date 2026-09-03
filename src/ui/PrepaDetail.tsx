@@ -2,7 +2,15 @@ import { useMemo, useState } from 'react';
 import type { DemiJournee, Ligne, Preparation, VolLigne } from '../types';
 import { etatAgglo, nomAffiche, useStore, volDepuisLigne } from '../state/store';
 import { couleur } from '../lib/tensions';
-import { domaine, dureeMinutes, libelleDuree, nomTypeVol, TYPES_VOL } from '../lib/vols';
+import {
+  domaine,
+  dureeMinutes,
+  libelleDuree,
+  nomTypeVol,
+  TYPES_VOL,
+  VITESSE_TRANSIT,
+} from '../lib/vols';
+import { calculerJournee, etapesDemiJournee } from '../lib/trajets';
 import { joursDeSemaine, libelleJour, libelleJourCourt, libelleSemaine } from '../lib/semaines';
 import { km as fmtKm } from '../lib/geo';
 import NotamJournee from './NotamJournee';
@@ -47,8 +55,12 @@ export default function PrepaDetail({
     supprimerHelicoptere,
     aggloManuel,
     rattachement,
+    zonesDePoser,
     taches: etatsTaches,
   } = useStore();
+
+  /** Le dossier d'une préparation se lit par volets, pour ne pas tout empiler. */
+  const [volet, setVolet] = useState<'planning' | 'echeances'>('planning');
 
   // échéances propres à cette préparation, partagées avec la fenêtre des échéances
   const toutesTaches = useTaches();
@@ -82,13 +94,28 @@ export default function PrepaDetail({
     return s;
   }, [prepa.creneaux]);
 
+  /** Contexte de survol d'un ouvrage, quand son département est chargé. */
+  const parId = useMemo(() => new Map(lignes.map((l) => [l.id, l])), [lignes]);
+
+  const dz = zonesDePoser.find((z) => z.id === prepa.dzId);
+
+  /** Enchaînement calculé de chaque journée : liaisons comprises. */
+  const journees = useMemo(() => {
+    const m = new Map<string, ReturnType<typeof calculerJournee>>();
+    for (const j of joursRetenus)
+      m.set(j, calculerJournee(prepa, prepa.creneaux[j], dz, parId, suivi));
+    return m;
+  }, [prepa, joursRetenus, dz, parId, suivi]);
+
   const duree = (v: VolLigne) => v.dureeMin ?? dureeMinutes(v.km, prepa.vitesse);
 
   const totalCreneau = (jour: string, demi: DemiJournee) => {
     const vols = prepa.creneaux[jour]?.[demi] ?? [];
+    const etapes = etapesDemiJournee(journees.get(jour) ?? { etapes: [] } as never, demi);
     return {
       km: vols.reduce((a, v) => a + v.km, 0),
       min: vols.reduce((a, v) => a + duree(v), 0),
+      transit: etapes.reduce((a, e) => a + e.transitMin, 0),
       n: vols.length,
     };
   };
@@ -96,19 +123,20 @@ export default function PrepaDetail({
   const totalPrepa = useMemo(() => {
     let km = 0;
     let min = 0;
+    let transit = 0;
     let n = 0;
-    for (const j of joursRetenus)
-      for (const d of DEMIS) {
-        const t = totalCreneau(j, d.cle);
-        km += t.km;
-        min += t.min;
-        n += t.n;
+    for (const j of joursRetenus) {
+      const jc = journees.get(j);
+      if (!jc) continue;
+      transit += jc.totalTransitMin;
+      min += jc.totalVisiteMin;
+      for (const e of jc.etapes) {
+        km += e.vol.km;
+        n++;
       }
-    return { km, min, n };
-  }, [prepa, joursRetenus]);
-
-  /** Contexte de survol d'un ouvrage, quand son département est chargé. */
-  const parId = useMemo(() => new Map(lignes.map((l) => [l.id, l])), [lignes]);
+    }
+    return { km, min, transit, n };
+  }, [joursRetenus, journees]);
 
   /** Ouvrages en agglomération alors que la préparation est en mono-turbine. */
   const alerteMono = useMemo(() => {
@@ -169,6 +197,32 @@ export default function PrepaDetail({
       </h2>
       <div className="sous-titre">{libelleSemaine(prepa.annee, prepa.semaine)}</div>
 
+      <nav className="volets">
+        <button
+          className={volet === 'planning' ? 'actif' : ''}
+          onClick={() => setVolet('planning')}
+        >
+          Planning
+        </button>
+        <button
+          className={volet === 'echeances' ? 'actif' : ''}
+          onClick={() => setVolet('echeances')}
+        >
+          Échéances
+          {tachesOuvertes > 0 && <span className="badge">{tachesOuvertes}</span>}
+        </button>
+      </nav>
+
+      {volet === 'echeances' ? (
+        <>
+          {tachesPrepa.length === 0 ? (
+            <p className="aide">Aucune échéance pour cette semaine.</p>
+          ) : (
+            <ListeTaches taches={tachesPrepa} sansReference />
+          )}
+        </>
+      ) : (
+        <>
       <div className="bloc-titre">Équipage et appareil</div>
       <div className="grille2">
         <label>
@@ -205,7 +259,7 @@ export default function PrepaDetail({
           </select>
         </label>
         <label>
-          Vitesse moyenne
+          Vitesse de visite
           <input
             className="champ"
             type="number"
@@ -217,7 +271,43 @@ export default function PrepaDetail({
             }
           />
         </label>
+        <label>
+          Zone de poser
+          <select
+            value={prepa.dzId ?? ''}
+            onChange={(e) => majPreparation(prepa.id, { dzId: e.target.value || undefined })}
+          >
+            <option value="">—</option>
+            {zonesDePoser.map((z) => (
+              <option key={z.id} value={z.id}>
+                {z.nom}
+                {z.gmr ? ` — ${z.gmr}` : ''}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Vitesse de transit
+          <input
+            className="champ"
+            type="number"
+            min={50}
+            max={350}
+            value={prepa.vitesseTransit ?? VITESSE_TRANSIT}
+            onChange={(e) =>
+              majPreparation(prepa.id, {
+                vitesseTransit: Math.max(1, Number(e.target.value) || VITESSE_TRANSIT),
+              })
+            }
+          />
+        </label>
       </div>
+      {!dz && zonesDePoser.length === 0 && (
+        <p className="aide">
+          Aucune zone de poser enregistrée. Créez-en une dans l&apos;onglet <b>Secteur</b> pour
+          que les trajets de liaison soient calculés.
+        </p>
+      )}
       <button className="lien aligne-gauche" onClick={() => setGestionFlotte((v) => !v)}>
         {gestionFlotte ? 'Masquer la flotte' : 'Gérer les appareils'}
       </button>
@@ -272,18 +362,6 @@ export default function PrepaDetail({
         </div>
       )}
 
-      {tachesPrepa.length > 0 && (
-        <>
-          <div className="bloc-titre">
-            Échéances de la semaine
-            <span className={tachesOuvertes ? 'compteur en-cours' : 'compteur'}>
-              {tachesOuvertes} à faire
-            </span>
-          </div>
-          <ListeTaches taches={tachesPrepa} sansReference />
-        </>
-      )}
-
       <div className="bloc-titre">Jours de la semaine</div>
       <div className="jours-semaine">
         {joursSemaine.map((j) => (
@@ -306,6 +384,15 @@ export default function PrepaDetail({
           <div className="journee-titre">{libelleJour(jour)}</div>
           <NotamJournee jour={jour} creneau={prepa.creneaux[jour]} />
 
+          {(() => {
+            const jc = journees.get(jour);
+            return jc && jc.retourKm != null && jc.etapes.length > 0 ? (
+              <div className="retour-dz">
+                Retour {dz?.nom} : {libelleDuree(jc.retourMin)} · {jc.retourKm.toFixed(0)} km ·
+                journée estimée à <b>{libelleDuree(jc.totalMin)}</b>
+              </div>
+            ) : null;
+          })()}
           {DEMIS.map((d) => {
             const vols = prepa.creneaux[jour]?.[d.cle] ?? [];
             const t = totalCreneau(jour, d.cle);
@@ -318,7 +405,9 @@ export default function PrepaDetail({
                   <b>{d.nom}</b>
                   {t.n > 0 && (
                     <span className="creneau-total">
-                      {t.n} ouvrage{t.n > 1 ? 's' : ''} · {fmtKm(t.km)} · {libelleDuree(t.min)}
+                      {t.n} ouvrage{t.n > 1 ? 's' : ''} · {fmtKm(t.km)} ·{' '}
+                      {libelleDuree(t.min)} de visite
+                      {t.transit > 0 && <> + {libelleDuree(t.transit)} de liaison</>}
                     </span>
                   )}
                   <div className="ligne-boutons">
@@ -390,6 +479,8 @@ export default function PrepaDetail({
                           <th>Ligne</th>
                           <th>Domaine</th>
                           <th>km</th>
+                          <th title="Extrémité par laquelle commence la visite">Départ</th>
+                          <th title="Trajet de liaison depuis le point précédent">Liaison</th>
                           <th>Durée</th>
                           <th title="Sites Seveso à moins de 2 km du tracé">Seveso</th>
                           <th>Commentaire</th>
@@ -399,6 +490,10 @@ export default function PrepaDetail({
                       <tbody>
                         {vols.map((v, i) => {
                           const ref = parId.get(v.ligneId);
+                          const etape = etapesDemiJournee(
+                            journees.get(jour) ?? ({ etapes: [] } as never),
+                            d.cle,
+                          ).find((e) => e.vol.id === v.id);
                           return (
                           <tr
                             key={v.id}
@@ -431,6 +526,35 @@ export default function PrepaDetail({
                                   })
                                 }
                               />
+                            </td>
+                            <td className="col-sens">
+                              <select
+                                className="cellule"
+                                value={v.sens ?? 'AB'}
+                                onChange={(e) =>
+                                  majVol(prepa.id, jour, d.cle, v.id, {
+                                    sens: e.target.value as 'AB' | 'BA',
+                                  })
+                                }
+                                title="Extrémité par laquelle commence la visite"
+                              >
+                                <option value="AB">{ref?.extremites[0] || 'Début'}</option>
+                                <option value="BA">{ref?.extremites[1] || 'Fin'}</option>
+                              </select>
+                            </td>
+                            <td className="num liaison">
+                              {etape?.transitKm == null ? (
+                                <span className="aide" title="Zone de poser ou tracé inconnu">
+                                  —
+                                </span>
+                              ) : (
+                                <>
+                                  {libelleDuree(etape.transitMin)}
+                                  <small>
+                                    {etape.transitKm.toFixed(0)} km
+                                  </small>
+                                </>
+                              )}
                             </td>
                             <td className="num duree" title="Modifiable : saisir des minutes">
                               <input
@@ -503,7 +627,7 @@ export default function PrepaDetail({
                           if (sevesoOuvert !== v.id || !ref?.seveso?.length) return null;
                           return (
                             <tr key={`${v.id}-seveso`} className="rangee-seveso">
-                              <td colSpan={7}>
+                              <td colSpan={9}>
                                 <SevesoDetail sites={ref.seveso} />
                               </td>
                             </tr>
@@ -536,7 +660,15 @@ export default function PrepaDetail({
             <span>{fmtKm(totalPrepa.km)}</span> à survoler
           </div>
           <div>
-            <span>{libelleDuree(totalPrepa.min)}</span> de vol estimé
+            <span>{libelleDuree(totalPrepa.min)}</span> de visite
+          </div>
+          {totalPrepa.transit > 0 && (
+            <div>
+              <span>{libelleDuree(totalPrepa.transit)}</span> de liaison
+            </div>
+          )}
+          <div>
+            <span>{libelleDuree(totalPrepa.min + totalPrepa.transit)}</span> au total
           </div>
         </div>
       )}
@@ -563,6 +695,8 @@ export default function PrepaDetail({
           </option>
         ))}
       </select>
+        </>
+      )}
     </div>
   );
 }
