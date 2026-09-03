@@ -69,12 +69,15 @@ compte, et reste utilisable **hors connexion** une fois le secteur chargé.
   elle-même**, sous le bloc équipage, avec le nombre de démarches encore à faire. C'est le
   même état des deux côtés : cocher ici ou là revient au même.
 
-- **Secteur par centre de maintenance et GMR** : une fois le référentiel RTE importé, le
-  secteur de travail se choisit dans deux menus déroulants — le CM, puis un ou plusieurs GMR.
-  Les fichiers de données à charger sont déduits des coordonnées du référentiel : le découpage
-  départemental devient invisible. Une case permet d'inclure ou non les ouvrages que le
-  référentiel ne rattache à aucun GMR. Tant qu'aucun référentiel n'est importé, la sélection
-  par départements reste disponible.
+- **Secteur par centre de maintenance, GMR et équipe** : une fois le référentiel RTE importé,
+  le secteur de travail se choisit dans des menus déroulants — le CM, puis un ou plusieurs
+  GMR, puis l'équipe (EEL) lorsque le GMR en compte plusieurs. Quatre GMR sont dans ce cas :
+  MASSIF CENTRAL OUEST (Limoges, Aurillac), BRETAGNE (Rennes, Quimper), LORRAINE (Metz,
+  Vincey) et PROVENCE ALPES DU SUD (BBA, Gap) ; pour les vingt-six autres, le sélecteur
+  d'équipe reste masqué. Les fichiers de données à charger sont déduits des coordonnées du
+  référentiel : le découpage départemental devient invisible. Une case permet d'inclure ou non
+  les ouvrages que le référentiel ne rattache à aucun GMR. Tant qu'aucun référentiel n'est
+  importé, la sélection par départements reste disponible.
 - **Référentiel RTE** (optionnel, local) : vous chargez dans l'application un export des
   pylônes comportant les colonnes *CM*, *GMR*, *Code Liaison*, *Numéro Pylône* et
   *Coord GPS*. Les ouvrages prennent alors leur **nom et leur code officiels**, leur

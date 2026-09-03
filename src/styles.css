@@ -1783,3 +1783,22 @@ th.col-agglo {
   color: #3730a3;
   border: 1px solid #a5b4fc;
 }
+
+/* Équipe d'entretien de lignes (EEL) : niveau sous le GMR */
+.marque-eel {
+  margin-left: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  border-radius: 7px;
+  padding: 0 5px;
+  vertical-align: 1px;
+  white-space: nowrap;
+  background: #ede9fe;
+  color: #5b21b6;
+  border: 1px solid #c4b5fd;
+}
+.puce-eel.active {
+  background: #5b21b6;
+  border-color: #5b21b6;
+}

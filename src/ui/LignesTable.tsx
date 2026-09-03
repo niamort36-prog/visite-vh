@@ -269,11 +269,25 @@ export default function LignesTable({ onOuvrir }: Props) {
                 <td className="col-nom">
                   <span className="pastille-tension" style={{ background: couleur(l.tension) }} />
                   <span className="nom">{nomAffiche(l, s, rattachement(l.id))}</span>
-                  {rattachement(l.id)?.gmr && (
-                    <span className="marque-gmr" title={`GMR ${rattachement(l.id)?.gmr} — CM ${rattachement(l.id)?.cm}`}>
-                      {rattachement(l.id)?.gmr}
-                    </span>
-                  )}
+                  {(() => {
+                    const rt = rattachement(l.id);
+                    if (!rt?.gmr) return null;
+                    return (
+                      <>
+                        <span
+                          className="marque-gmr"
+                          title={`GMR ${rt.gmr} — CM ${rt.cm}`}
+                        >
+                          {rt.gmr}
+                        </span>
+                        {rt.eel && rt.eel !== rt.gmr && (
+                          <span className="marque-eel" title={`Équipe ${rt.eel}`}>
+                            {rt.eel}
+                          </span>
+                        )}
+                      </>
+                    );
+                  })()}
                   {l.seveso?.length && (
                     <span
                       className="marque-seveso"

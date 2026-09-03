@@ -36,6 +36,17 @@ export default function SecteurPanel() {
     return [...new Set(Object.values(zonesDisponibles.gmrParCm).flat())].sort();
   }, [zonesDisponibles, secteur.cm]);
 
+  /**
+   * Équipes proposées : celles des GMR retenus. Quatre GMR seulement en comptent
+   * plusieurs, on n'encombre donc l'écran que lorsqu'il y a un choix à faire.
+   */
+  const equipesProposees = useMemo(() => {
+    const source = secteur.gmr.length ? secteur.gmr : gmrProposes;
+    const out = new Set<string>();
+    for (const g of source) for (const e of zonesDisponibles.eelParGmr[g] ?? []) out.add(e);
+    return [...out].sort();
+  }, [secteur.gmr, gmrProposes, zonesDisponibles]);
+
   /** Volume réellement affiché après filtrage par GMR. */
   const bilan = useMemo(() => {
     let kmTotal = 0;
@@ -120,7 +131,9 @@ export default function SecteurPanel() {
               Centre de maintenance
               <select
                 value={secteur.cm}
-                onChange={(e) => setSecteur({ ...secteur, cm: e.target.value, gmr: [] })}
+                onChange={(e) =>
+                  setSecteur({ ...secteur, cm: e.target.value, gmr: [], eel: [] })
+                }
               >
                 <option value="">Tous les centres</option>
                 {zonesDisponibles.cm.map((c) => (
@@ -137,7 +150,7 @@ export default function SecteurPanel() {
                 onChange={(e) => {
                   const g = e.target.value;
                   if (g && !secteur.gmr.includes(g))
-                    setSecteur({ ...secteur, gmr: [...secteur.gmr, g].sort() });
+                    setSecteur({ ...secteur, gmr: [...secteur.gmr, g].sort(), eel: [] });
                 }}
               >
                 <option value="">
@@ -162,16 +175,69 @@ export default function SecteurPanel() {
                   className="puce active"
                   title="Retirer ce GMR du secteur"
                   onClick={() =>
-                    setSecteur({ ...secteur, gmr: secteur.gmr.filter((x) => x !== g) })
+                    setSecteur({
+                      ...secteur,
+                      gmr: secteur.gmr.filter((x) => x !== g),
+                      eel: [],
+                    })
                   }
                 >
                   {g} ×
                 </button>
               ))}
-              <button className="puce" onClick={() => setSecteur({ ...secteur, gmr: [] })}>
+              <button
+                className="puce"
+                onClick={() => setSecteur({ ...secteur, gmr: [], eel: [] })}
+              >
                 Tout effacer
               </button>
             </div>
+          )}
+
+          {equipesProposees.length > 1 && (
+            <>
+              <label>
+                Équipe (EEL)
+                <select
+                  value=""
+                  onChange={(e) => {
+                    const x = e.target.value;
+                    if (x && !secteur.eel.includes(x))
+                      setSecteur({ ...secteur, eel: [...secteur.eel, x].sort() });
+                  }}
+                >
+                  <option value="">
+                    {secteur.eel.length ? 'Ajouter une équipe…' : 'Toutes les équipes'}
+                  </option>
+                  {equipesProposees
+                    .filter((x) => !secteur.eel.includes(x))
+                    .map((x) => (
+                      <option key={x} value={x}>
+                        {x}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              {secteur.eel.length > 0 && (
+                <div className="filtres">
+                  {secteur.eel.map((x) => (
+                    <button
+                      key={x}
+                      className="puce active puce-eel"
+                      title="Retirer cette équipe du secteur"
+                      onClick={() =>
+                        setSecteur({ ...secteur, eel: secteur.eel.filter((y) => y !== x) })
+                      }
+                    >
+                      {x} ×
+                    </button>
+                  ))}
+                  <button className="puce" onClick={() => setSecteur({ ...secteur, eel: [] })}>
+                    Toutes les équipes
+                  </button>
+                </div>
+              )}
+            </>
           )}
 
           <label className="bascule-agglo">
@@ -183,14 +249,14 @@ export default function SecteurPanel() {
             <span>Afficher aussi les ouvrages que le référentiel ne rattache à aucun GMR</span>
           </label>
 
-          {!secteur.cm && !secteur.gmr.length && (
+          {!secteur.cm && !secteur.gmr.length && !secteur.eel.length && (
             <p className="aide">
               Choisissez un centre de maintenance, puis un ou plusieurs GMR. Les données du
               réseau se chargent automatiquement sur l&apos;emprise correspondante.
             </p>
           )}
 
-          {(secteur.cm || secteur.gmr.length > 0) && (
+          {(secteur.cm || secteur.gmr.length > 0 || secteur.eel.length > 0) && (
             <div className="bloc">
               <div className="bloc-titre">Secteur chargé</div>
               <div className="stats">

@@ -89,11 +89,13 @@ export interface Secteur {
   cm: string;
   /** GMR retenus ; vide signifie « tout le centre » */
   gmr: string[];
+  /** équipes (EEL) retenues ; vide signifie « tout le GMR » */
+  eel: string[];
   /** afficher aussi les ouvrages que le référentiel ne rattache à aucun GMR */
   inclureNonRattaches: boolean;
 }
 
-const SECTEUR_VIDE: Secteur = { cm: '', gmr: [], inclureNonRattaches: true };
+const SECTEUR_VIDE: Secteur = { cm: '', gmr: [], eel: [], inclureNonRattaches: true };
 
 function campagneParDefaut(): Campagne {
   const annee = new Date().getFullYear();
@@ -160,7 +162,8 @@ function lire(): Persiste {
       if (p.campagnes?.length)
         return {
           ...p,
-          secteur: p.secteur ?? SECTEUR_VIDE,
+          // un secteur enregistré avant l'ajout des équipes n'a pas le champ eel
+          secteur: { ...SECTEUR_VIDE, ...(p.secteur ?? {}) },
           suivis: migrerSuivis(p.suivis),
           preparations: p.preparations ?? {},
           helicopteres: p.helicopteres ?? [],
@@ -198,7 +201,12 @@ interface Ctx {
   secteur: Secteur;
   setSecteur: (s: Secteur) => void;
   /** centres de maintenance et GMR proposés par le référentiel */
-  zonesDisponibles: { cm: string[]; gmrParCm: Record<string, string[]> };
+  zonesDisponibles: {
+    cm: string[];
+    gmrParCm: Record<string, string[]>;
+    /** équipes d'entretien de lignes, par GMR */
+    eelParGmr: Record<string, string[]>;
+  };
 
   lignes: Ligne[];
   postes: Poste[];
@@ -367,11 +375,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
    * d'afficher les ouvrages qu'il ne rattache pas — ils restent nombreux.
    */
   const lignes = useMemo(() => {
-    const { cm, gmr, inclureNonRattaches } = etat.secteur;
-    if (!referentiel || (!cm && !gmr.length)) return lignesChargees;
+    const { cm, gmr, eel, inclureNonRattaches } = etat.secteur;
+    if (!referentiel || (!cm && !gmr.length && !eel.length)) return lignesChargees;
     return lignesChargees.filter((l) => {
       const r = rattachements.get(l.id);
       if (!r) return inclureNonRattaches;
+      if (eel.length) return eel.includes(r.eel);
       if (gmr.length) return gmr.includes(r.gmr);
       return !cm || r.cm === cm;
     });
@@ -402,16 +411,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   /** Centres et GMR connus du référentiel. */
   const zonesDisponibles = useMemo(() => {
     const gmrParCm: Record<string, Set<string>> = {};
+    const eelParGmr: Record<string, Set<string>> = {};
     for (const l of Object.values(referentiel?.liaisons ?? {})) {
       if (!l.gmr) continue;
-      const cm = l.cm || '—';
-      (gmrParCm[cm] ??= new Set()).add(l.gmr);
+      (gmrParCm[l.cm || '—'] ??= new Set()).add(l.gmr);
+      if (l.eel) (eelParGmr[l.gmr] ??= new Set()).add(l.eel);
     }
+    const trier = (o: Record<string, Set<string>>) =>
+      Object.fromEntries(Object.entries(o).map(([k, v]) => [k, [...v].sort()]));
     return {
       cm: Object.keys(gmrParCm).sort(),
-      gmrParCm: Object.fromEntries(
-        Object.entries(gmrParCm).map(([k, v]) => [k, [...v].sort()]),
-      ),
+      gmrParCm: trier(gmrParCm),
+      eelParGmr: trier(eelParGmr),
     };
   }, [referentiel]);
 
@@ -424,12 +435,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
    */
   useEffect(() => {
     if (!referentiel || !index) return;
-    const { cm, gmr } = etat.secteur;
-    if (!cm && !gmr.length) return;
+    const { cm, gmr, eel } = etat.secteur;
+    if (!cm && !gmr.length && !eel.length) return;
 
     const retenus = new Set(
       Object.values(referentiel.liaisons)
-        .filter((l) => (gmr.length ? gmr.includes(l.gmr) : !cm || l.cm === cm))
+        .filter((l) => {
+          if (eel.length) return eel.includes(l.eel);
+          if (gmr.length) return gmr.includes(l.gmr);
+          return !cm || l.cm === cm;
+        })
         .map((l) => l.code),
     );
     const codes = new Set<string>();
