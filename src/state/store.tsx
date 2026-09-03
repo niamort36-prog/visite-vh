@@ -57,7 +57,10 @@ function lireReferentielLocal(): ReferentielRte | null {
 interface Persiste {
   campagnes: Campagne[];
   campagneCourante: string;
+  /** départements réellement chargés — détail interne, déduit du secteur */
   depts: string[];
+  /** secteur de travail, exprimé en centres de maintenance et GMR */
+  secteur: Secteur;
   suivis: Record<string, SuiviLigne[]>;
   observations: Record<string, Observation[]>;
   /** préparations de vol, par campagne */
@@ -75,6 +78,22 @@ interface Persiste {
   /** état des échéances, par campagne puis par identifiant de tâche */
   taches: Record<string, Record<string, EtatTache>>;
 }
+
+/**
+ * Secteur de travail. Le réseau est stocké par département, mais l'exploitant
+ * raisonne en centre de maintenance et en GMR : le découpage administratif ne
+ * sert plus qu'à savoir quels fichiers charger.
+ */
+export interface Secteur {
+  /** centre de maintenance retenu, vide pour « tous » */
+  cm: string;
+  /** GMR retenus ; vide signifie « tout le centre » */
+  gmr: string[];
+  /** afficher aussi les ouvrages que le référentiel ne rattache à aucun GMR */
+  inclureNonRattaches: boolean;
+}
+
+const SECTEUR_VIDE: Secteur = { cm: '', gmr: [], inclureNonRattaches: true };
 
 function campagneParDefaut(): Campagne {
   const annee = new Date().getFullYear();
@@ -141,6 +160,7 @@ function lire(): Persiste {
       if (p.campagnes?.length)
         return {
           ...p,
+          secteur: p.secteur ?? SECTEUR_VIDE,
           suivis: migrerSuivis(p.suivis),
           preparations: p.preparations ?? {},
           helicopteres: p.helicopteres ?? [],
@@ -157,6 +177,7 @@ function lire(): Persiste {
     campagnes: [c],
     campagneCourante: c.id,
     depts: [],
+    secteur: SECTEUR_VIDE,
     suivis: { [c.id]: [] },
     observations: { [c.id]: [] },
     preparations: { [c.id]: [] },
@@ -174,6 +195,10 @@ interface Ctx {
 
   depts: string[];
   setDepts: (d: string[]) => void;
+  secteur: Secteur;
+  setSecteur: (s: Secteur) => void;
+  /** centres de maintenance et GMR proposés par le référentiel */
+  zonesDisponibles: { cm: string[]; gmrParCm: Record<string, string[]> };
 
   lignes: Ligne[];
   postes: Poste[];
@@ -272,7 +297,7 @@ const StoreContext = createContext<Ctx | null>(null);
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [etat, setEtat] = useState<Persiste>(lire);
   const [index, setIndex] = useState<IndexReseau | null>(null);
-  const [lignes, setLignes] = useState<Ligne[]>([]);
+  const [lignesChargees, setLignesChargees] = useState<Ligne[]>([]);
   const [postes, setPostes] = useState<Poste[]>([]);
   const [chargement, setChargement] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
@@ -303,7 +328,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     let annule = false;
     const jeton = ++compteur.current;
     if (etat.depts.length === 0) {
-      setLignes([]);
+      setLignesChargees([]);
       setPostes([]);
       return;
     }
@@ -325,7 +350,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         const finales = liens.size
           ? brutes.map((l) => appliquerNumeros(l, liens.get(l.id)))
           : brutes;
-        setLignes(finales.sort((a, b) => a.nom.localeCompare(b.nom, 'fr')));
+        setLignesChargees(finales.sort((a, b) => a.nom.localeCompare(b.nom, 'fr')));
         setPostes([...parIdPoste.values()]);
         setErreur(null);
       })
@@ -335,6 +360,22 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       annule = true;
     };
   }, [etat.depts, referentiel]);
+
+  /**
+   * Ouvrages du secteur retenu. Sans référentiel, tout ce qui est chargé est
+   * montré ; avec, on s'en tient aux GMR choisis, en gardant la possibilité
+   * d'afficher les ouvrages qu'il ne rattache pas — ils restent nombreux.
+   */
+  const lignes = useMemo(() => {
+    const { cm, gmr, inclureNonRattaches } = etat.secteur;
+    if (!referentiel || (!cm && !gmr.length)) return lignesChargees;
+    return lignesChargees.filter((l) => {
+      const r = rattachements.get(l.id);
+      if (!r) return inclureNonRattaches;
+      if (gmr.length) return gmr.includes(r.gmr);
+      return !cm || r.cm === cm;
+    });
+  }, [lignesChargees, rattachements, etat.secteur, referentiel]);
 
   const setReferentiel = useCallback((r: ReferentielRte | null) => {
     try {
@@ -357,6 +398,53 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     () => (rattachements.size ? bilan(rattachements) : null),
     [rattachements],
   );
+
+  /** Centres et GMR connus du référentiel. */
+  const zonesDisponibles = useMemo(() => {
+    const gmrParCm: Record<string, Set<string>> = {};
+    for (const l of Object.values(referentiel?.liaisons ?? {})) {
+      if (!l.gmr) continue;
+      const cm = l.cm || '—';
+      (gmrParCm[cm] ??= new Set()).add(l.gmr);
+    }
+    return {
+      cm: Object.keys(gmrParCm).sort(),
+      gmrParCm: Object.fromEntries(
+        Object.entries(gmrParCm).map(([k, v]) => [k, [...v].sort()]),
+      ),
+    };
+  }, [referentiel]);
+
+  const setSecteur = useCallback((s: Secteur) => setEtat((e) => ({ ...e, secteur: s })), []);
+
+  /**
+   * Départements à charger pour couvrir le secteur : ceux dont l'emprise contient
+   * au moins un pylône de référence des GMR retenus. Le découpage administratif
+   * reste ainsi invisible pour l'exploitant.
+   */
+  useEffect(() => {
+    if (!referentiel || !index) return;
+    const { cm, gmr } = etat.secteur;
+    if (!cm && !gmr.length) return;
+
+    const retenus = new Set(
+      Object.values(referentiel.liaisons)
+        .filter((l) => (gmr.length ? gmr.includes(l.gmr) : !cm || l.cm === cm))
+        .map((l) => l.code),
+    );
+    const codes = new Set<string>();
+    for (const a of referentiel.ancres) {
+      if (!retenus.has(a.c)) continue;
+      for (const d of index.departements) {
+        const [s0, w, n, e] = d.bbox;
+        if (a.lat >= s0 && a.lat <= n && a.lon >= w && a.lon <= e) codes.add(d.code);
+      }
+    }
+    const liste = [...codes].sort();
+    setEtat((e) =>
+      liste.join(',') === e.depts.join(',') ? e : { ...e, depts: liste },
+    );
+  }, [etat.secteur, referentiel, index]);
 
   const setDepts = useCallback((d: string[]) => {
     setEtat((s) => ({ ...s, depts: d }));
@@ -718,6 +806,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     erreur,
     depts: etat.depts,
     setDepts,
+    secteur: etat.secteur,
+    setSecteur,
+    zonesDisponibles,
     lignes,
     postes,
     referentiel,

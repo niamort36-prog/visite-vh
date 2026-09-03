@@ -69,11 +69,16 @@ compte, et reste utilisable **hors connexion** une fois le secteur chargé.
   elle-même**, sous le bloc équipage, avec le nombre de démarches encore à faire. C'est le
   même état des deux côtés : cocher ici ou là revient au même.
 
-- **Référentiel RTE** (optionnel, local) : vous pouvez charger dans l'application un export
-  des pylônes comportant les colonnes *CM*, *GMR*, *Code Liaison*, *Numéro Pylône* et
+- **Secteur par centre de maintenance et GMR** : une fois le référentiel RTE importé, le
+  secteur de travail se choisit dans deux menus déroulants — le CM, puis un ou plusieurs GMR.
+  Les fichiers de données à charger sont déduits des coordonnées du référentiel : le découpage
+  départemental devient invisible. Une case permet d'inclure ou non les ouvrages que le
+  référentiel ne rattache à aucun GMR. Tant qu'aucun référentiel n'est importé, la sélection
+  par départements reste disponible.
+- **Référentiel RTE** (optionnel, local) : vous chargez dans l'application un export des
+  pylônes comportant les colonnes *CM*, *GMR*, *Code Liaison*, *Numéro Pylône* et
   *Coord GPS*. Les ouvrages prennent alors leur **nom et leur code officiels**, leur
-  **rattachement CM / GMR / EEL**, et les pylônes retrouvés leur **numéro réel**. Un filtre
-  par GMR s'ajoute au tableau des lignes.
+  **rattachement CM / GMR / EEL**, et les pylônes retrouvés leur **numéro réel**.
 - **Campagnes** : un suivi distinct par campagne (par exemple une par année).
 - **Sauvegarde** par export / import d'un fichier JSON, à conserver ou à partager.
 

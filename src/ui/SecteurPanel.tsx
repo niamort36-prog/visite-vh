@@ -1,48 +1,54 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useStore } from '../state/store';
 import { km, octets, tuilesPourBbox } from '../lib/geo';
-import { estHorsLigne } from '../data/reseau';
 import { COUCHE_AERO, FONDS_TELECHARGEABLES, urlTuile } from '../map/fonds';
 import ReferentielPanel from './ReferentielPanel';
 
 /**
- * Choix du secteur : quels départements charger, et mise à disposition hors ligne
- * (données réseau + fonds de carte) avant de partir en vol.
+ * Choix du secteur de travail — centre de maintenance et GMR — et mise à
+ * disposition hors ligne. Le découpage administratif ne sert qu'en dernier
+ * recours, tant qu'aucun référentiel RTE n'a été importé.
  */
 export default function SecteurPanel() {
-  const { index, depts, setDepts, chargement } = useStore();
+  const {
+    index,
+    depts,
+    setDepts,
+    secteur,
+    setSecteur,
+    zonesDisponibles,
+    referentiel,
+    chargement,
+    lignes,
+    rattachement,
+  } = useStore();
   const [filtre, setFiltre] = useState('');
-  const [dispo, setDispo] = useState<Record<string, boolean>>({});
   const [tache, setTache] = useState<{ libelle: string; fait: number; total: number } | null>(null);
-
-  const liste = useMemo(() => {
-    if (!index) return [];
-    const f = filtre.trim().toLowerCase();
-    return index.departements
-      .filter((d) => !f || d.nom.toLowerCase().includes(f) || d.code.startsWith(f))
-      .sort((a, b) => a.code.localeCompare(b.code, 'fr'));
-  }, [index, filtre]);
-
-  useEffect(() => {
-    if (!index) return;
-    let vivant = true;
-    Promise.all(
-      index.departements.map(async (d) => [d.code, await estHorsLigne(d.code)] as const),
-    ).then((r) => vivant && setDispo(Object.fromEntries(r)));
-    return () => {
-      vivant = false;
-    };
-  }, [index, depts]);
-
-  const basculer = (code: string) =>
-    setDepts(depts.includes(code) ? depts.filter((c) => c !== code) : [...depts, code]);
 
   const selection = useMemo(
     () => (index?.departements ?? []).filter((d) => depts.includes(d.code)),
     [index, depts],
   );
 
-  /** Nombre de tuiles à télécharger pour un fond et un zoom maximum donnés. */
+  /** GMR proposés : ceux du centre retenu, ou tous. */
+  const gmrProposes = useMemo(() => {
+    if (secteur.cm) return zonesDisponibles.gmrParCm[secteur.cm] ?? [];
+    return [...new Set(Object.values(zonesDisponibles.gmrParCm).flat())].sort();
+  }, [zonesDisponibles, secteur.cm]);
+
+  /** Volume réellement affiché après filtrage par GMR. */
+  const bilan = useMemo(() => {
+    let kmTotal = 0;
+    let pylones = 0;
+    let rattachees = 0;
+    for (const l of lignes) {
+      kmTotal += l.km;
+      pylones += l.nbPylones;
+      if (rattachement(l.id)) rattachees++;
+    }
+    return { lignes: lignes.length, km: kmTotal, pylones, rattachees };
+  }, [lignes, rattachement]);
+
   function compterTuiles(indice: number, zoomMax: number): number {
     const c = FONDS_TELECHARGEABLES[indice];
     const zMax = Math.min(zoomMax, c.fond.zoomNatifMax);
@@ -52,7 +58,6 @@ export default function SecteurPanel() {
     );
   }
 
-  /** Pré-charge les tuiles d'un fond sur l'emprise sélectionnée, pour l'usage en vol. */
   async function preparerHorsLigne(indice: number, zoomMax: number) {
     const choix = FONDS_TELECHARGEABLES[indice];
     if (!selection.length || !choix) return;
@@ -62,7 +67,6 @@ export default function SecteurPanel() {
     for (const d of selection) {
       for (const t of tuilesPourBbox(d.bbox, choix.zMin, zMax)) {
         urls.push(urlTuile(choix.fond, t.z, t.x, t.y));
-        // la carte VFR n'a de sens qu'accompagnée de sa surcharge aéronautique
         if (choix.avecAero) urls.push(urlTuile(COUCHE_AERO, t.z, t.x, t.y));
       }
     }
@@ -84,7 +88,7 @@ export default function SecteurPanel() {
           try {
             if (!(await cache.match(u))) await cache.add(u);
           } catch {
-            /* tuile manquante : sans conséquence, la carte restera simplement vide ici */
+            /* tuile manquante : sans conséquence, la carte restera vide ici */
           }
         }),
       );
@@ -95,63 +99,168 @@ export default function SecteurPanel() {
 
   if (!index) return <div className="vide">Chargement du catalogue…</div>;
 
+  const listeDepts = index.departements
+    .filter(
+      (d) =>
+        !filtre ||
+        d.nom.toLowerCase().includes(filtre.toLowerCase()) ||
+        d.code.startsWith(filtre),
+    )
+    .sort((a, b) => a.code.localeCompare(b.code, 'fr'));
+
   return (
     <div className="panneau">
-      <p className="aide">
-        Sélectionnez les départements de votre secteur. Les données restent disponibles hors
-        connexion une fois chargées.
-      </p>
-
-      <input
-        className="champ"
-        placeholder="Filtrer par nom ou numéro…"
-        value={filtre}
-        onChange={(e) => setFiltre(e.target.value)}
-      />
-
       <ReferentielPanel />
 
-      <div className="liste-depts">
-        {liste.map((d) => (
-          <label key={d.code} className={depts.includes(d.code) ? 'dept coche' : 'dept'}>
+      {referentiel ? (
+        <>
+          <div className="bloc-titre">Secteur de travail</div>
+          <div className="grille2">
+            <label>
+              Centre de maintenance
+              <select
+                value={secteur.cm}
+                onChange={(e) => setSecteur({ ...secteur, cm: e.target.value, gmr: [] })}
+              >
+                <option value="">Tous les centres</option>
+                {zonesDisponibles.cm.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              GMR
+              <select
+                value=""
+                onChange={(e) => {
+                  const g = e.target.value;
+                  if (g && !secteur.gmr.includes(g))
+                    setSecteur({ ...secteur, gmr: [...secteur.gmr, g].sort() });
+                }}
+              >
+                <option value="">
+                  {secteur.gmr.length ? 'Ajouter un GMR…' : 'Tout le centre'}
+                </option>
+                {gmrProposes
+                  .filter((g) => !secteur.gmr.includes(g))
+                  .map((g) => (
+                    <option key={g} value={g}>
+                      {g}
+                    </option>
+                  ))}
+              </select>
+            </label>
+          </div>
+
+          {secteur.gmr.length > 0 && (
+            <div className="filtres">
+              {secteur.gmr.map((g) => (
+                <button
+                  key={g}
+                  className="puce active"
+                  title="Retirer ce GMR du secteur"
+                  onClick={() =>
+                    setSecteur({ ...secteur, gmr: secteur.gmr.filter((x) => x !== g) })
+                  }
+                >
+                  {g} ×
+                </button>
+              ))}
+              <button className="puce" onClick={() => setSecteur({ ...secteur, gmr: [] })}>
+                Tout effacer
+              </button>
+            </div>
+          )}
+
+          <label className="bascule-agglo">
             <input
               type="checkbox"
-              checked={depts.includes(d.code)}
-              onChange={() => basculer(d.code)}
+              checked={secteur.inclureNonRattaches}
+              onChange={(e) => setSecteur({ ...secteur, inclureNonRattaches: e.target.checked })}
             />
-            <span className="dept-code">{d.code}</span>
-            <span className="dept-nom">{d.nom}</span>
-            <span className="dept-meta">
-              {d.nbLignes} lignes · {km(d.km, 0)} · {octets(d.taille)}
-              {dispo[d.code] && <span className="pastille" title="Disponible hors ligne" />}
-            </span>
+            <span>Afficher aussi les ouvrages que le référentiel ne rattache à aucun GMR</span>
           </label>
-        ))}
-        {liste.length === 0 && <div className="vide">Aucun département ne correspond.</div>}
-      </div>
+
+          {!secteur.cm && !secteur.gmr.length && (
+            <p className="aide">
+              Choisissez un centre de maintenance, puis un ou plusieurs GMR. Les données du
+              réseau se chargent automatiquement sur l&apos;emprise correspondante.
+            </p>
+          )}
+
+          {(secteur.cm || secteur.gmr.length > 0) && (
+            <div className="bloc">
+              <div className="bloc-titre">Secteur chargé</div>
+              <div className="stats">
+                <div>
+                  <b>{bilan.lignes}</b> ouvrages
+                </div>
+                <div>
+                  <b>{bilan.pylones.toLocaleString('fr-FR')}</b> pylônes
+                </div>
+                <div>
+                  <b>{km(bilan.km, 0)}</b> de réseau
+                </div>
+                <div>
+                  <b>{bilan.rattachees}</b> rattachés au référentiel
+                </div>
+              </div>
+              {chargement && <div className="aide">Chargement des données…</div>}
+              {!chargement && bilan.lignes === 0 && (
+                <p className="aide alerte">
+                  Aucun ouvrage sur ce secteur. Vérifiez le GMR retenu, ou cochez
+                  l&apos;affichage des ouvrages non rattachés.
+                </p>
+              )}
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          <div className="bloc-titre">Secteur de travail</div>
+          <p className="aide">
+            Importez le référentiel RTE ci-dessus pour choisir votre secteur par centre de
+            maintenance et par GMR. En attendant, sélectionnez les départements à charger.
+          </p>
+          <input
+            className="champ"
+            placeholder="Filtrer par nom ou numéro…"
+            value={filtre}
+            onChange={(e) => setFiltre(e.target.value)}
+          />
+          <div className="liste-depts">
+            {listeDepts.map((d) => (
+              <label key={d.code} className={depts.includes(d.code) ? 'dept coche' : 'dept'}>
+                <input
+                  type="checkbox"
+                  checked={depts.includes(d.code)}
+                  onChange={() =>
+                    setDepts(
+                      depts.includes(d.code)
+                        ? depts.filter((c) => c !== d.code)
+                        : [...depts, d.code],
+                    )
+                  }
+                />
+                <span className="dept-code">{d.code}</span>
+                <span className="dept-nom">{d.nom}</span>
+                <span className="dept-meta">
+                  {d.nbLignes} lignes · {km(d.km, 0)} · {octets(d.taille)}
+                </span>
+              </label>
+            ))}
+          </div>
+        </>
+      )}
 
       {selection.length > 0 && (
         <div className="bloc">
-          <div className="bloc-titre">Secteur sélectionné</div>
-          <div className="stats">
-            <div>
-              <b>{selection.reduce((a, d) => a + d.nbLignes, 0)}</b> lignes
-            </div>
-            <div>
-              <b>{selection.reduce((a, d) => a + d.nbPylones, 0).toLocaleString('fr-FR')}</b> pylônes
-            </div>
-            <div>
-              <b>{km(selection.reduce((a, d) => a + d.km, 0), 0)}</b> de réseau
-            </div>
-            <div>
-              <b>{selection.reduce((a, d) => a + d.nbPostes, 0)}</b> postes
-            </div>
-          </div>
-
           <div className="bloc-titre">Préparer le vol hors connexion</div>
           <p className="aide">
-            Les données réseau sont mises en cache dès leur chargement. Choisissez ici les fonds de
-            carte à emporter : ils resteront affichables sans réseau sur l'emprise du secteur.
+            Les données réseau sont mises en cache dès leur chargement. Choisissez ici les fonds
+            de carte à emporter sur l&apos;emprise du secteur.
           </p>
           <div className="fonds-telechargement">
             {FONDS_TELECHARGEABLES.map((c, i) => (
@@ -182,8 +291,6 @@ export default function SecteurPanel() {
           )}
         </div>
       )}
-
-      {chargement && <div className="vide">Chargement des données…</div>}
     </div>
   );
 }
