@@ -2454,3 +2454,15 @@ td.liaison small {
   color: #92400e;
   border: 1px solid #fcd34d;
 }
+
+/* Clôture d'une demi-journée : ravitaillement puis retour à la zone de poser */
+.cloture-demi {
+  margin: 4px 0 2px;
+  padding: 5px 9px;
+  border-radius: 7px;
+  font-size: 12px;
+  line-height: 1.45;
+  background: #f0f9ff;
+  color: #075985;
+  border: 1px solid #bae6fd;
+}

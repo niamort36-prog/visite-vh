@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import type { DemiJournee, FichePreparation, Preparation } from '../types';
 import { etatAgglo, nomAffiche, useStore } from '../state/store';
+import { calculerJournee, clotureDemiJournee } from '../lib/trajets';
 import { km as fmtKm } from '../lib/geo';
 import { libelleJour, libelleSemaine } from '../lib/semaines';
 import { natureDuTypeVol, nomTypeVol } from '../lib/vols';
@@ -27,8 +28,16 @@ export default function FichePrepa({
   prepa: Preparation;
   onFermer?: () => void;
 }) {
-  const { lignes, suivi, rattachement, majPreparation, majVol, aggloManuel, zonesDePoser } =
-    useStore();
+  const {
+    lignes,
+    suivi,
+    rattachement,
+    majPreparation,
+    majVol,
+    aggloManuel,
+    zonesDePoser,
+    pointsCarburant,
+  } = useStore();
 
   const parId = useMemo(() => new Map(lignes.map((l) => [l.id, l])), [lignes]);
   const jours = useMemo(() => [...prepa.jours].sort(), [prepa.jours]);
@@ -294,6 +303,10 @@ export default function FichePrepa({
           const vols = prepa.creneaux[jour]?.[d.cle] ?? [];
           if (!vols.length) return null;
           const total = vols.reduce((a, v) => a + v.km, 0);
+          const cloture = clotureDemiJournee(
+            calculerJournee(prepa, prepa.creneaux[jour], dz, parId, suivi, pointsCarburant),
+            d.cle,
+          );
           return (
             <section className="page" key={`${jour}-${d.cle}`}>
               <div className="fiche-entete-jour">
@@ -359,6 +372,28 @@ export default function FichePrepa({
                   </tr>
                 </tbody>
               </table>
+
+              {cloture && (
+                <p className="mention retour">
+                  Fin de vacation :{' '}
+                  {cloture.carburant ? (
+                    <>
+                      ravitaillement{' '}
+                      <b>
+                        {cloture.carburant.oaci ? `${cloture.carburant.oaci} — ` : ''}
+                        {cloture.carburant.nom}
+                      </b>
+                      {cloture.ravitaillementKm != null &&
+                        ` (${cloture.ravitaillementKm.toFixed(0)} km)`}
+                      , puis retour
+                    </>
+                  ) : (
+                    <>retour</>
+                  )}{' '}
+                  {dz?.nom ?? 'zone de poser'}
+                  {cloture.retourKm != null && ` (${cloture.retourKm.toFixed(0)} km)`}.
+                </p>
+              )}
 
               <p className="mention">
                 Les points particuliers seront repérés sur plan du réseau du GMR avant chaque

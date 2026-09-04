@@ -10,7 +10,7 @@ import {
   TYPES_VOL,
   VITESSE_TRANSIT,
 } from '../lib/vols';
-import { calculerJournee, etapesDemiJournee } from '../lib/trajets';
+import { calculerJournee, clotureDemiJournee, etapesDemiJournee } from '../lib/trajets';
 import { joursDeSemaine, libelleJour, libelleJourCourt, libelleSemaine } from '../lib/semaines';
 import { dateCourte, km as fmtKm } from '../lib/geo';
 import NotamJournee from './NotamJournee';
@@ -57,6 +57,7 @@ export default function PrepaDetail({
     aggloManuel,
     rattachement,
     zonesDePoser,
+    pointsCarburant,
     taches: etatsTaches,
   } = useStore();
 
@@ -104,19 +105,23 @@ export default function PrepaDetail({
   const journees = useMemo(() => {
     const m = new Map<string, ReturnType<typeof calculerJournee>>();
     for (const j of joursRetenus)
-      m.set(j, calculerJournee(prepa, prepa.creneaux[j], dz, parId, suivi));
+      m.set(j, calculerJournee(prepa, prepa.creneaux[j], dz, parId, suivi, pointsCarburant));
     return m;
-  }, [prepa, joursRetenus, dz, parId, suivi]);
+  }, [prepa, joursRetenus, dz, parId, suivi, pointsCarburant]);
 
   const duree = (v: VolLigne) => v.dureeMin ?? dureeMinutes(v.km, prepa.vitesse);
 
   const totalCreneau = (jour: string, demi: DemiJournee) => {
     const vols = prepa.creneaux[jour]?.[demi] ?? [];
-    const etapes = etapesDemiJournee(journees.get(jour) ?? { etapes: [] } as never, demi);
+    const jc = journees.get(jour);
+    const etapes = etapesDemiJournee(jc ?? ({ etapes: [] } as never), demi);
+    const cl = jc && clotureDemiJournee(jc, demi);
     return {
       km: vols.reduce((a, v) => a + v.km, 0),
       min: vols.reduce((a, v) => a + duree(v), 0),
-      transit: etapes.reduce((a, e) => a + e.transitMin, 0),
+      transit:
+        etapes.reduce((a, e) => a + e.transitMin, 0) +
+        (cl ? cl.ravitaillementMin + cl.retourMin : 0),
       n: vols.length,
     };
   };
@@ -430,10 +435,10 @@ export default function PrepaDetail({
 
           {(() => {
             const jc = journees.get(jour);
-            return jc && jc.retourKm != null && jc.etapes.length > 0 ? (
+            return jc && jc.etapes.length > 0 ? (
               <div className="retour-dz">
-                Retour {dz?.nom} : {libelleDuree(jc.retourMin)} · {jc.retourKm.toFixed(0)} km ·
-                journée estimée à <b>{libelleDuree(jc.totalMin)}</b>
+                Journée estimée à <b>{libelleDuree(jc.totalMin)}</b>, liaisons et
+                ravitaillements compris
               </div>
             ) : null;
           })()}
@@ -679,6 +684,46 @@ export default function PrepaDetail({
                         })}
                       </tbody>
                     </table>
+                    {(() => {
+                      const jc = journees.get(jour);
+                      const cl = jc && clotureDemiJournee(jc, d.cle);
+                      if (!cl) return null;
+                      return (
+                        <div className="cloture-demi">
+                          {cl.carburant ? (
+                            <>
+                              Ravitaillement{' '}
+                              <b>
+                                {cl.carburant.oaci ? `${cl.carburant.oaci} — ` : ''}
+                                {cl.carburant.nom}
+                              </b>{' '}
+                              : {cl.ravitaillementKm?.toFixed(0)} km ·{' '}
+                              {libelleDuree(cl.ravitaillementMin)}
+                              {cl.carburant.telephone ? ` · ${cl.carburant.telephone}` : ''}
+                              {' — puis retour '}
+                            </>
+                          ) : (
+                            <>
+                              Aucun point Jet A-1 enregistré : ajoutez-en dans le panneau
+                              Secteur. Retour direct{' '}
+                            </>
+                          )}
+                          {dz ? (
+                            <>
+                              {dz.nom}
+                              {cl.retourKm != null && (
+                                <>
+                                  {' '}
+                                  : {cl.retourKm.toFixed(0)} km · {libelleDuree(cl.retourMin)}
+                                </>
+                              )}
+                            </>
+                          ) : (
+                            <>à la zone de poser, à choisir ci-dessus pour être chiffré</>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
               </div>
