@@ -729,10 +729,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (!r) return undefined;
       const notres = r.sections.filter((sec) => sectionDansSecteur(sec, etat.secteur));
       if (!notres.length) return undefined;
-      return {
-        debut: Math.min(...notres.map((sec) => sec.du)),
-        fin: Math.max(...notres.map((sec) => sec.au)),
-      };
+      const debut = Math.min(...notres.map((sec) => sec.du));
+      const fin = Math.max(...notres.map((sec) => sec.au));
+      /*
+       * Un seul pylône rattaché ne fait pas un périmètre : la ligne se
+       * retrouverait à zéro kilomètre et entièrement hors périmètre. Mieux vaut
+       * alors ne rien déduire et laisser le tracé entier, quitte à ce que
+       * l'exploitant pose lui-même ses frontières.
+       */
+      if (fin - debut < 1) return undefined;
+      return { debut, fin };
     },
     [rattachements, etat.secteur],
   );

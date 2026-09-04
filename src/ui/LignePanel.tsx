@@ -242,6 +242,21 @@ export default function LignePanel({ ligne, onCadrerPylone }: Props) {
           </p>
         );
       })()}
+      {(() => {
+        const premier = ligne.pylones[0]?.i ?? 1;
+        const dernier = ligne.pylones[ligne.pylones.length - 1]?.i ?? premier;
+        const a = calculerAvancement(ligne, s);
+        if (a.debut === premier && a.fin === dernier) return null;
+        return (
+          <button
+            className="lien"
+            title="Ignorer la frontière déduite et visiter le tracé entier"
+            onClick={() => majSuivi(ligne.id, { debut: premier, fin: dernier })}
+          >
+            Je visite toute la ligne ({km(ligne.km)})
+          </button>
+        );
+      })()}
       <div className="grille2">
         <label>
           Début
