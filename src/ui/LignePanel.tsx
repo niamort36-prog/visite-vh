@@ -3,6 +3,8 @@ import type { Ligne, StatutLigne } from '../types';
 import {
   calculerAvancement,
   codeAffiche,
+  kmSection,
+  sectionDansSecteur,
   etatAgglo,
   nomAffiche,
   portionsFaites,
@@ -30,6 +32,7 @@ export default function LignePanel({ ligne, onCadrerPylone }: Props) {
     aggloManuel,
     setAggloManuel,
     rattachement,
+    secteur,
     majVisite,
     note,
     setNote,
@@ -89,6 +92,28 @@ export default function LignePanel({ ligne, onCadrerPylone }: Props) {
               GMR <b>{rat.gmr}</b>
               {rat.cm && <> · CM {rat.cm}</>}
               {rat.eel && rat.eel !== rat.gmr && <> · EEL {rat.eel}</>}
+            </div>
+          )}
+          {rat && rat.sections.length > 1 && (
+            <div className="sections-ouvrage">
+              <span className="aide">
+                Ouvrage partagé : la visite s&apos;arrête à la frontière d&apos;équipe.
+              </span>
+              {rat.sections.map((sec) => {
+                const notre = sectionDansSecteur(sec, secteur);
+                const num = (rang: number) =>
+                  ligne.pylones.find((p) => p.i === rang)?.num ?? rang;
+                return (
+                  <div key={sec.code} className={notre ? 'section notre' : 'section'}>
+                    <b>{sec.eel || sec.gmr}</b>
+                    <span>
+                      pylônes {num(sec.du)} → {num(sec.au)}
+                    </span>
+                    <span>{kmSection(ligne, sec).toFixed(1).replace('.', ',')} km</span>
+                    <code>{sec.code}</code>
+                  </div>
+                );
+              })}
             </div>
           )}
           {!codeAffiche(ligne, s, rat) && !!ligne.candidatsRte?.length && (

@@ -37,8 +37,10 @@ import {
   apparier,
   appliquerNumeros,
   bilan,
+  couvre,
   type BilanAppariement,
   type RattachementLigne,
+  type SectionRte,
 } from '../data/appariement';
 
 const CLE = 'visite-vh:v1';
@@ -567,9 +569,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return lignesChargees.filter((l) => {
       const r = rattachements.get(l.id);
       if (!r) return inclureNonRattaches;
-      if (eel.length) return eel.includes(r.eel);
-      if (gmr.length) return gmr.includes(r.gmr);
-      return !cm || r.cm === cm;
+      // un ouvrage partagé avec l'équipe voisine relève du secteur par sa
+      // section, même si le reste du tracé appartient à l'autre GMR
+      if (eel.length) return couvre(r, 'eel', eel);
+      if (gmr.length) return couvre(r, 'gmr', gmr);
+      return !cm || couvre(r, 'cm', [cm]);
     });
   }, [lignesChargees, rattachements, etat.secteur, referentiel]);
 
@@ -615,8 +619,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (filtres.aggloSeules && !etatAgglo(l, etat.aggloManuel).actif) return false;
       if (filtres.sevesoSeules && !l.seveso?.length) return false;
       if (filtres.aIdentifierSeules && !l.aIdentifier) return false;
-      if (filtres.gmr.length && !filtres.gmr.includes(rattachements.get(l.id)?.gmr ?? ''))
-        return false;
+      if (filtres.gmr.length) {
+        const r = rattachements.get(l.id);
+        if (!r || !couvre(r, 'gmr', filtres.gmr)) return false;
+      }
       if (filtres.statuts.length) {
         const st = (parLigne.get(l.id) ?? suiviVide(l.id)).visites.VH.statut;
         if (!filtres.statuts.includes(st)) return false;
@@ -1384,6 +1390,29 @@ export function volDepuisLigne(
  */
 export function nomAffiche(l: Ligne, s: SuiviLigne, r?: RattachementLigne): string {
   return s.nomPerso?.trim() || r?.nom || l.nom;
+}
+
+/**
+ * Longueur d'une section, prise sur la distance cumulée des pylônes qu'elle
+ * couvre. C'est ce que l'équipe a réellement à visiter d'un ouvrage partagé.
+ */
+export function kmSection(l: Ligne, s: SectionRte): number {
+  let debut: number | null = null;
+  let fin: number | null = null;
+  for (const p of l.pylones) {
+    if (p.i < s.du || p.i > s.au) continue;
+    if (debut === null) debut = p.d;
+    fin = p.d;
+  }
+  return debut === null || fin === null ? 0 : Math.max(0, fin - debut);
+}
+
+/** La section relève-t-elle du secteur retenu ? Sans secteur, tout en relève. */
+export function sectionDansSecteur(s: SectionRte, secteur: Secteur): boolean {
+  if (secteur.eel.length) return secteur.eel.includes(s.eel);
+  if (secteur.gmr.length) return secteur.gmr.includes(s.gmr);
+  if (secteur.cm) return s.cm === secteur.cm;
+  return true;
 }
 
 /** Code d'ouvrage RTE retenu : saisie manuelle, puis référentiel, puis appariement par nom. */

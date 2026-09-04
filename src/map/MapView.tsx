@@ -5,8 +5,10 @@ import type { Ligne, Poste, Pylone } from '../types';
 import {
   calculerAvancement,
   codeAffiche,
+  kmSection,
   portionsFaites,
   nomAffiche,
+  sectionDansSecteur,
   useStore,
 } from '../state/store';
 import { couleur, epaisseur } from '../lib/tensions';
@@ -54,6 +56,11 @@ interface Props {
   lignesPrepa?: Set<string>;
 }
 
+/** Numéro officiel d'un pylône par son rang, ou le rang à défaut. */
+function numPylone(l: Ligne, rang: number): string {
+  return l.pylones.find((p) => p.i === rang)?.num ?? String(rang);
+}
+
 export default function MapView({
   cible,
   onPyloneClic,
@@ -69,6 +76,7 @@ export default function MapView({
     setLigneActive,
     depts,
     rattachement,
+    secteur,
     filtres,
     zonesDePoser,
     pointsCarburant,
@@ -221,14 +229,68 @@ export default function MapView({
       });
       const rat = rattachement(l.id);
       const code = codeAffiche(l, s, rat);
+      const partage = (rat?.sections.length ?? 0) > 1;
       trace.bindTooltip(
         `<b>${nomAffiche(l, s, rat)}</b><br>${l.tension} kV · ` +
           `${l.km.toFixed(1).replace('.', ',')} km` +
           (code ? `<br><code>${code}</code>` : '') +
-          (rat?.gmr ? `<br>GMR ${rat.gmr}` : ''),
+          (partage
+            ? '<br>' +
+              rat!.sections
+                .map(
+                  (sec) =>
+                    `${sectionDansSecteur(sec, secteur) ? '▸' : '·'} ${sec.eel || sec.gmr} : ` +
+                    `${numPylone(l, sec.du)} → ${numPylone(l, sec.au)} ` +
+                    `(${kmSection(l, sec).toFixed(1).replace('.', ',')} km)`,
+                )
+                .join('<br>')
+            : rat?.gmr
+              ? `<br>GMR ${rat.gmr}`
+              : ''),
         { sticky: true },
       );
       trace.addTo(g);
+
+      /*
+       * Ouvrage partagé avec l'équipe voisine : sa section est estompée et un
+       * repère marque la frontière, là où notre visite s'arrête.
+       */
+      if (partage) {
+        for (const sec of rat!.sections) {
+          if (sectionDansSecteur(sec, secteur)) continue;
+          const pts = points({ debut: sec.du, fin: sec.au });
+          if (pts.length < 2) continue;
+          L.polyline(pts, {
+            color: '#ffffff',
+            weight: epaisseur(l.tension) + 1,
+            opacity: 0.7,
+          }).addTo(g);
+          L.polyline(pts, {
+            color: couleur(l.tension),
+            weight: epaisseur(l.tension),
+            opacity: 0.5,
+            dashArray: '3 5',
+          }).addTo(g);
+        }
+        for (let k = 1; k < rat!.sections.length; k++) {
+          const py = l.pylones.find((x) => x.i === rat!.sections[k].du);
+          if (!py) continue;
+          L.circleMarker([py.lat, py.lon], {
+            radius: 5,
+            color: '#b45309',
+            weight: 2,
+            fillColor: '#fde68a',
+            fillOpacity: 1,
+          })
+            .bindTooltip(
+              `<b>Frontière d'équipe</b><br>pylône ${py.num}<br>` +
+                `${rat!.sections[k - 1].eel || rat!.sections[k - 1].gmr} | ` +
+                `${rat!.sections[k].eel || rat!.sections[k].gmr}`,
+              { direction: 'top' },
+            )
+            .addTo(g);
+        }
+      }
 
       if (horsPerimetre) continue;
 
@@ -252,7 +314,7 @@ export default function MapView({
         }).addTo(g);
       }
     }
-  }, [lignes, suivi, ligneActive, setLigneActive, rattachement]);
+  }, [lignes, suivi, ligneActive, setLigneActive, rattachement, secteur]);
 
   /* ---- ouvrages inscrits à la préparation ouverte ------------------- */
   useEffect(() => {

@@ -57,7 +57,14 @@ export default function ReferentielPanel() {
               {bilanRte.numerosInterpoles > 0 && (
                 <> et {bilanRte.numerosInterpoles} déduits entre deux pylônes vérifiés</>
               )}
-              . GMR concernés : {bilanRte.gmr.join(', ') || '—'}.
+              .{' '}
+              {bilanRte.lignesFrontieres > 0 && (
+                <>
+                  <b>{bilanRte.lignesFrontieres}</b> tracés franchissent une frontière
+                  d&apos;équipe et sont découpés en sections.{' '}
+                </>
+              )}
+              GMR concernés : {bilanRte.gmr.join(', ') || '—'}.
             </p>
           ) : (
             <p className="aide">

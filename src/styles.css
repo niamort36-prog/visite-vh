@@ -1784,6 +1784,22 @@ th.col-agglo {
   border: 1px solid #a5b4fc;
 }
 
+/*
+ * Section d'un ouvrage partagé qui relève de l'équipe voisine : la visite
+ * s'arrête à la frontière, la section est donc rappelée en retrait.
+ */
+.marque-gmr.marque-voisine {
+  background: #f1f5f9;
+  color: #64748b;
+  border-color: #cbd5e1;
+  border-style: dashed;
+}
+
+.marque-gmr small {
+  font-weight: 500;
+  opacity: 0.75;
+}
+
 /* Équipe d'entretien de lignes (EEL) : niveau sous le GMR */
 .marque-eel {
   margin-left: 4px;
@@ -2395,4 +2411,34 @@ td.liaison small {
   border: 2px solid #b45309;
   font-size: 12px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Sections d'un ouvrage partagé entre deux équipes, dans la fiche d'ouvrage */
+.sections-ouvrage {
+  margin-top: 6px;
+  display: grid;
+  gap: 3px;
+}
+
+.sections-ouvrage .section {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 12px;
+  padding: 3px 7px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px dashed #cbd5e1;
+}
+
+.sections-ouvrage .section.notre {
+  background: #e0e7ff;
+  color: #3730a3;
+  border: 1px solid #a5b4fc;
+}
+
+.sections-ouvrage .section code {
+  margin-left: auto;
+  font-size: 11px;
 }

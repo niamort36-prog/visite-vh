@@ -3,9 +3,11 @@ import type { Ligne, StatutLigne } from '../types';
 import {
   calculerAvancement,
   codeAffiche,
+  kmSection,
   portionsFaites,
   etatAgglo,
   nomAffiche,
+  sectionDansSecteur,
   useStore,
 } from '../state/store';
 import { couleur } from '../lib/tensions';
@@ -21,8 +23,16 @@ interface Props {
 
 /** Tableau de bord du secteur : une ligne par ouvrage, avec kilométrage et avancement. */
 export default function LignesTable({ onOuvrir }: Props) {
-  const { lignes, lignesAffichees, suivi, ligneActive, aggloManuel, setAggloManuel, rattachement } =
-    useStore();
+  const {
+    lignes,
+    lignesAffichees,
+    suivi,
+    ligneActive,
+    aggloManuel,
+    setAggloManuel,
+    rattachement,
+    secteur,
+  } = useStore();
   const [recherche, setRecherche] = useState('');
   const [tri, setTri] = useState<{ col: Colonne; desc: boolean }>({ col: 'nom', desc: false });
 
@@ -181,21 +191,45 @@ export default function LignesTable({ onOuvrir }: Props) {
                   {(() => {
                     const rt = rattachement(l.id);
                     if (!rt?.gmr) return null;
-                    return (
-                      <>
+                    const num = (rang: number) =>
+                      l.pylones.find((p) => p.i === rang)?.num ?? rang;
+                    /*
+                     * Un ouvrage qui franchit une frontière de GMR est partagé
+                     * avec l'équipe voisine : on montre chaque section, la
+                     * nôtre en clair, celle du voisin en grisé, pour savoir où
+                     * la visite s'arrête.
+                     */
+                    return rt.sections.map((sec) => {
+                      const notre = sectionDansSecteur(sec, secteur);
+                      const partage = rt.sections.length > 1;
+                      return (
                         <span
-                          className="marque-gmr"
-                          title={`GMR ${rt.gmr} — CM ${rt.cm}`}
+                          key={sec.code}
+                          className={
+                            'marque-gmr' + (partage && !notre ? ' marque-voisine' : '')
+                          }
+                          title={
+                            `GMR ${sec.gmr}${sec.eel && sec.eel !== sec.gmr ? ` — équipe ${sec.eel}` : ''}` +
+                            ` — CM ${sec.cm}` +
+                            (partage
+                              ? `\nPylônes ${num(sec.du)} à ${num(sec.au)} — ` +
+                                `${kmSection(l, sec).toFixed(1).replace('.', ',')} km` +
+                                (notre
+                                  ? '\nSection à visiter par votre équipe.'
+                                  : "\nSection de l'équipe voisine : la visite s'arrête à la frontière.")
+                              : '')
+                          }
                         >
-                          {rt.gmr}
+                          {sec.eel && sec.eel !== sec.gmr ? sec.eel : sec.gmr}
+                          {partage && (
+                            <small>
+                              {' '}
+                              {num(sec.du)}–{num(sec.au)}
+                            </small>
+                          )}
                         </span>
-                        {rt.eel && rt.eel !== rt.gmr && (
-                          <span className="marque-eel" title={`Équipe ${rt.eel}`}>
-                            {rt.eel}
-                          </span>
-                        )}
-                      </>
-                    );
+                      );
+                    });
                   })()}
                   {l.seveso?.length && (
                     <span
