@@ -2270,3 +2270,129 @@ td.liaison small {
     margin: 12mm;
   }
 }
+
+/* ---------------------------------------------------------------- */
+/* Échéances détaillées et points de ravitaillement                   */
+/* ---------------------------------------------------------------- */
+
+.points-tache {
+  margin: 3px 0 0;
+  padding-left: 16px;
+  font-size: 11px;
+  color: var(--texte-doux);
+}
+.points-tache li {
+  margin-bottom: 1px;
+}
+.contacts-tache {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+}
+.contacts-tache li {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  background: #f6f9fd;
+  border: 1px solid var(--bord);
+  border-radius: var(--rayon);
+  padding: 2px 6px;
+}
+.contact-libelle {
+  font-weight: 600;
+  color: var(--texte-doux);
+}
+.contacts-tache a {
+  color: var(--accent);
+  word-break: break-all;
+}
+
+.role {
+  font-size: 9px;
+  font-weight: 700;
+  border-radius: 7px;
+  padding: 0 5px;
+  letter-spacing: 0.3px;
+}
+.role-GET {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+.role-IL {
+  background: #fef3c7;
+  color: #92400e;
+}
+.portee {
+  font-size: 9px;
+  font-weight: 700;
+  border-radius: 7px;
+  padding: 0 5px;
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
+.carburants {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.carburants li {
+  border: 1px solid var(--bord);
+  border-left: 3px solid #b45309;
+  border-radius: var(--rayon);
+  padding: 5px 8px;
+  background: #fffbf5;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.carburant-entete {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.carburant-entete .cellule {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+}
+.carburant-entete .supprimer {
+  position: static;
+  flex: none;
+}
+.carburant-options {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.coche {
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--texte-doux);
+}
+.coche input {
+  width: auto;
+}
+
+.marqueur-carburant span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid #b45309;
+  font-size: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}

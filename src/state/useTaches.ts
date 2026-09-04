@@ -8,11 +8,12 @@ import { genererTaches, type Tache } from '../lib/taches';
  * échéances et le détail d'une préparation, pour qu'ils ne divergent jamais.
  */
 export function useTaches(): Tache[] {
-  const { campagnes, campagneCourante, index, depts, preparations, lignes } = useStore();
+  const { campagnes, campagneCourante, index, depts, preparations, lignes, secteur } =
+    useStore();
   return useMemo(() => {
     const campagne = campagnes.find((c) => c.id === campagneCourante);
     if (!campagne) return [];
     const entrees = (index?.departements ?? []).filter((d) => depts.includes(d.code));
-    return genererTaches(campagne, entrees, preparations, lignes);
-  }, [campagnes, campagneCourante, index, depts, preparations, lignes]);
+    return genererTaches(campagne, entrees, preparations, lignes, secteur);
+  }, [campagnes, campagneCourante, index, depts, preparations, lignes, secteur]);
 }

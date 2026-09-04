@@ -71,6 +71,7 @@ export default function MapView({
     rattachement,
     filtres,
     zonesDePoser,
+    pointsCarburant,
   } = useStore();
   const conteneur = useRef<HTMLDivElement>(null);
   const carte = useRef<L.Map | null>(null);
@@ -287,7 +288,26 @@ export default function MapView({
         .bindTooltip(`<b>${z.nom}</b><br>Zone de poser · ${z.gmr}`, { direction: 'top' })
         .addTo(g);
     }
-  }, [zonesDePoser]);
+    for (const c of pointsCarburant) {
+      const produits = [c.jetA1 ? 'Jet A-1' : '', c.avgas ? '100LL' : ''].filter(Boolean);
+      L.marker([c.lat, c.lon], {
+        icon: L.divIcon({
+          className: 'marqueur-carburant',
+          html: `<span>⛽</span>`,
+          iconSize: [22, 22],
+          iconAnchor: [11, 11],
+        }),
+      })
+        .bindTooltip(
+          `<b>${c.nom}</b>${c.oaci ? ` <code>${c.oaci}</code>` : ''}<br>` +
+            `${produits.join(' · ') || 'carburant à préciser'}` +
+            `${c.automate ? ' · automate' : ''}` +
+            `${c.horaires ? `<br>${c.horaires}` : ''}`,
+          { direction: 'top' },
+        )
+        .addTo(g);
+    }
+  }, [zonesDePoser, pointsCarburant]);
 
   /* ---- postes ----------------------------------------------------- */
   useEffect(() => {

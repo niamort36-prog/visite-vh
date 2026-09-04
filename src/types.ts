@@ -178,6 +178,7 @@ export interface Sauvegarde {
   preparations?: Record<string, Preparation[]>;
   helicopteres?: Helicoptere[];
   zonesDePoser?: ZoneDePoser[];
+  pointsCarburant?: PointCarburant[];
   contactsSeveso?: Record<string, ContactSeveso>;
   aggloManuel?: Record<string, boolean>;
   taches?: Record<string, Record<string, EtatTache>>;
@@ -233,6 +234,27 @@ export interface FichePreparation {
   sthOrganisme?: string;
   sthDate?: string;
   observations?: string;
+}
+
+/**
+ * Point de ravitaillement en carburant aviation. La disponibilité du Jet A-1
+ * n'étant publiée par aucune source ouverte exploitable — elle figure dans l'AIP
+ * terrain par terrain et évolue — ces points sont renseignés par l'exploitant.
+ */
+export interface PointCarburant {
+  id: string;
+  nom: string;
+  /** code OACI du terrain, quand il en a un */
+  oaci?: string;
+  lat: number;
+  lon: number;
+  jetA1: boolean;
+  avgas?: boolean;
+  /** distribution en libre-service par automate */
+  automate?: boolean;
+  horaires?: string;
+  telephone?: string;
+  note?: string;
 }
 
 /** Une ligne du planning : un ouvrage à survoler dans une demi-journée. */

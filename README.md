@@ -68,6 +68,11 @@ compte, et reste utilisable **hors connexion** une fois le secteur chargé.
   décoche** : on ajoute une agglomération que les données ont manquée, on retire celle qui
   est de trop. Une valeur corrigée porte un liseré orange et se rétablit d'un clic depuis le
   panneau *Ouvrage*. Ces corrections valent pour toutes les campagnes et suivent l'export.
+- **Points de ravitaillement** : les terrains où s'avitailler en Jet A-1 ou en 100LL, avec
+  automate, horaires et téléphone, repérés sur la carte. Ils s'ajoutent en piochant dans le
+  référentiel des 433 terrains à code OACI. La disponibilité du carburant n'étant publiée par
+  aucune source ouverte exploitable — elle figure dans l'AIP, rubrique *Carburants* de chaque
+  aérodrome, et évolue — ces points sont renseignés par l'exploitant, jamais devinés.
 - **Zones de poser** : une ou plusieurs par GMR, placées d'un clic sur la carte. Une
   préparation en désigne une : elle sert de point de départ le matin et de retour en fin de
   journée.
@@ -88,13 +93,27 @@ compte, et reste utilisable **hors connexion** une fois le secteur chargé.
   sous quinze jours en orange, et le bouton de l'en-tête porte le nombre de tâches ouvertes.
   Chaque tâche se coche et accepte une note.
 
-  | Démarche | Échéance |
-  | --- | --- |
-  | Courrier à la gendarmerie de chaque département du secteur | début de campagne |
-  | Demandes au STH | 5 semaines avant le premier vol, **pour les vols en bi-turbine** |
-  | Demandes de survol des zones Seveso | 1 semaine avant, si des sites sont concernés |
-  | Consultation des activations AZBA et R368 (zone centre) | 1 semaine avant |
-  | Envoi de la préparation aux groupements de postes | 1 semaine avant |
+  | Échelle de temps | Démarche | Portée |
+  | --- | --- | --- |
+  | Début d'année | Demandes de survol d'agglomération au STH | commune |
+  | Dès réception du planning | Courrier à chaque gendarmerie des départements survolés | commune |
+  | 5 semaines avant (bi-turbine) | Prescriptions particulières pour les agglomérations, au plus tard | commune |
+  | 1 semaine avant | Faire la préparation, CARTEM, chantiers DI | commune |
+  | 1 semaine avant | Envoi du planning aux groupements de postes, consigne drones | commune, boîtes propres à l'équipe |
+  | 1 semaine avant | Demande de zone ZSM | CM Toulouse |
+  | 1 semaine avant | Demandes de survol Seveso, si des sites sont concernés | commune |
+  | 1 semaine avant | Activations AZBA et R368 | commune |
+  | 1 semaine avant | Retours de visites IL, disponibilité des lignes, matériel | commune, opérateur IL |
+  | Lundi matin | Demandes particulières, zones militaires, NOTAM, extincteur | commune |
+  | Lundi matin | Voiture, extincteur, chargement de la visite | commune, opérateur IL |
+  | Après la semaine | Alertes végétation, tableau d'avancement | commune |
+  | Après la semaine | Photos, avis IL, rapport de synthèse, mobiligne | commune, opérateur IL |
+
+  Chaque démarche porte sa **portée** — commune, propre à un centre de maintenance ou à une
+  équipe — et n'apparaît que si elle concerne le secteur retenu ; les adresses de contact
+  suivent la même règle. Le rôle qui la porte, **GET** ou **opérateur IL**, est indiqué. La
+  semaine de vol elle-même ne produit pas d'échéance : ce qu'il s'y passe relève de la conduite
+  du vol.
 
   Une préparation s'ouvre comme un dossier à deux volets — **Planning** et **Échéances** — ce
   qui garde l'écran de composition du planning dégagé. Le volet Échéances reprend les

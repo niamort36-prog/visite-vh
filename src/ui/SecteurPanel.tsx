@@ -4,6 +4,7 @@ import { km, octets, tuilesPourBbox } from '../lib/geo';
 import { COUCHE_AERO, FONDS_TELECHARGEABLES, urlTuile } from '../map/fonds';
 import ReferentielPanel from './ReferentielPanel';
 import ZonesDePoserPanel from './ZonesDePoserPanel';
+import CarburantPanel from './CarburantPanel';
 
 /**
  * Choix du secteur de travail — centre de maintenance et GMR — et mise à
@@ -335,6 +336,8 @@ export default function SecteurPanel({ placementDz, onPlacerDz, onAnnulerDz }: P
           onAnnuler={onAnnulerDz}
         />
       )}
+
+      <CarburantPanel />
 
       {selection.length > 0 && (
         <div className="bloc">

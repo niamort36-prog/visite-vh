@@ -1,5 +1,5 @@
 import { useStore } from '../state/store';
-import { LIBELLE_CATEGORIE, type Tache } from '../lib/taches';
+import { LIBELLE_CATEGORIE, libellePortee, type Tache } from '../lib/taches';
 import { delaiLisible, joursAvant } from '../lib/semaines';
 import { aujourdhui, dateCourte } from '../lib/geo';
 
@@ -41,15 +41,45 @@ export default function ListeTaches({
                   {LIBELLE_CATEGORIE[t.categorie]}
                 </span>
                 <b>{t.titre}</b>
+                <span className={`role role-${t.role}`}>{t.role === 'IL' ? 'Opérateur IL' : 'GET'}</span>
+                {t.portee.type !== 'commune' && (
+                  <span className="portee">{libellePortee(t.portee)}</span>
+                )}
                 {t.reference && !sansReference && <span className="tache-ref">{t.reference}</span>}
               </div>
               {t.detail && <div className="sous-titre">{t.detail}</div>}
+              {t.points && t.points.length > 0 && (
+                <ul className="points-tache">
+                  {t.points.map((x) => (
+                    <li key={x}>{x}</li>
+                  ))}
+                </ul>
+              )}
+              {t.contacts && t.contacts.length > 0 && (
+                <ul className="contacts-tache">
+                  {t.contacts.map((c) => (
+                    <li key={c.valeur}>
+                      <span className="contact-libelle">{c.libelle}</span>
+                      {c.type === 'mail' ? (
+                        <a href={`mailto:${c.valeur}`}>{c.valeur}</a>
+                      ) : c.type === 'lien' ? (
+                        <a href={c.valeur} target="_blank" rel="noopener noreferrer">
+                          {c.valeur}
+                        </a>
+                      ) : (
+                        <span>{c.valeur}</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
               <div className="tache-echeance">
                 {etat.fait ? (
                   <>Fait le {dateCourte(etat.le)}</>
                 ) : (
                   <>
-                    Échéance {dateCourte(t.echeance)} — {delaiLisible(t.echeance)}
+                    {t.auPlusTard ? 'Au plus tard le' : 'Échéance'} {dateCourte(t.echeance)} —{' '}
+                    {delaiLisible(t.echeance)}
                   </>
                 )}
               </div>

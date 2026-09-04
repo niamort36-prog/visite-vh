@@ -25,6 +25,7 @@ import type {
   StatutLigne,
   SuiviLigne,
   TypeVol,
+  PointCarburant,
   VolLigne,
   ZoneDePoser,
   ZoneSurvolee,
@@ -74,6 +75,8 @@ interface Persiste {
   helicopteres: Helicoptere[];
   /** zones de poser, une ou plusieurs par GMR */
   zonesDePoser: ZoneDePoser[];
+  /** points de ravitaillement en carburant aviation */
+  pointsCarburant: PointCarburant[];
   /** coordonnées des sites Seveso, saisies par l'exploitant, par identifiant AIOT */
   contactsSeveso: Record<string, ContactSeveso>;
   /**
@@ -276,6 +279,7 @@ function lire(): Persiste {
           preparations: p.preparations ?? {},
           helicopteres: p.helicopteres ?? [],
           zonesDePoser: p.zonesDePoser ?? [],
+          pointsCarburant: p.pointsCarburant ?? [],
           contactsSeveso: p.contactsSeveso ?? {},
           aggloManuel: p.aggloManuel ?? {},
           taches: p.taches ?? {},
@@ -296,6 +300,7 @@ function lire(): Persiste {
     preparations: { [c.id]: [] },
     helicopteres: [],
     zonesDePoser: [],
+    pointsCarburant: [],
     contactsSeveso: {},
     aggloManuel: {},
     taches: { [c.id]: {} },
@@ -408,6 +413,11 @@ interface Ctx {
   ajouterZoneDePoser: (z: Omit<ZoneDePoser, 'id'>) => void;
   majZoneDePoser: (id: string, patch: Partial<ZoneDePoser>) => void;
   supprimerZoneDePoser: (id: string) => void;
+
+  pointsCarburant: PointCarburant[];
+  ajouterPointCarburant: (c: Omit<PointCarburant, 'id'>) => void;
+  majPointCarburant: (id: string, patch: Partial<PointCarburant>) => void;
+  supprimerPointCarburant: (id: string) => void;
 
   contactsSeveso: Record<string, ContactSeveso>;
   majContactSeveso: (id: string, patch: ContactSeveso) => void;
@@ -1011,6 +1021,30 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setEtat((s) => ({ ...s, zonesDePoser: s.zonesDePoser.filter((z) => z.id !== id) }));
   }, []);
 
+  const ajouterPointCarburant = useCallback((c: Omit<PointCarburant, 'id'>) => {
+    setEtat((s) => {
+      // un même terrain ne se saisit pas deux fois
+      if (c.oaci && s.pointsCarburant.some((x) => x.oaci === c.oaci)) return s;
+      return {
+        ...s,
+        pointsCarburant: [...s.pointsCarburant, { ...c, id: nouvelId('carb') }].sort((a, b) =>
+          a.nom.localeCompare(b.nom, 'fr'),
+        ),
+      };
+    });
+  }, []);
+
+  const majPointCarburant = useCallback((id: string, patch: Partial<PointCarburant>) => {
+    setEtat((s) => ({
+      ...s,
+      pointsCarburant: s.pointsCarburant.map((c) => (c.id === id ? { ...c, ...patch } : c)),
+    }));
+  }, []);
+
+  const supprimerPointCarburant = useCallback((id: string) => {
+    setEtat((s) => ({ ...s, pointsCarburant: s.pointsCarburant.filter((c) => c.id !== id) }));
+  }, []);
+
   const majTache = useCallback((tacheId: string, patch: Partial<EtatTache>) => {
     setEtat((s) => {
       const cid = s.campagneCourante;
@@ -1051,6 +1085,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       preparations: etat.preparations,
       helicopteres: etat.helicopteres,
       zonesDePoser: etat.zonesDePoser,
+      pointsCarburant: etat.pointsCarburant,
       contactsSeveso: etat.contactsSeveso,
       aggloManuel: etat.aggloManuel,
       taches: etat.taches,
@@ -1087,6 +1122,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         zonesDePoser: (() => {
           const parId = new Map(cur.zonesDePoser.map((z) => [z.id, z]));
           for (const z of s.zonesDePoser ?? []) parId.set(z.id, z);
+          return [...parId.values()];
+        })(),
+        pointsCarburant: (() => {
+          const parId = new Map(cur.pointsCarburant.map((c) => [c.id, c]));
+          for (const c of s.pointsCarburant ?? []) parId.set(c.id, c);
           return [...parId.values()];
         })(),
         contactsSeveso: { ...cur.contactsSeveso, ...(s.contactsSeveso ?? {}) },
@@ -1153,6 +1193,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     ajouterZoneDePoser,
     majZoneDePoser,
     supprimerZoneDePoser,
+    pointsCarburant: etat.pointsCarburant,
+    ajouterPointCarburant,
+    majPointCarburant,
+    supprimerPointCarburant,
     contactsSeveso: etat.contactsSeveso,
     majContactSeveso,
     aggloManuel: etat.aggloManuel,
