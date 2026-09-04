@@ -2309,6 +2309,55 @@ td.liaison small {
   .fiche .page-planning table {
     width: 100%;
   }
+
+  /*
+   * Impression de la liste des ouvrages, déclenchée par son bouton : A3 en
+   * paysage, le tableau étant trop large pour l'A4. Seuls la synthèse et le
+   * tableau sortent — la recherche, les filtres et le bouton n'ont pas de sens
+   * sur papier.
+   */
+  @page liste {
+    size: A3 landscape;
+    margin: 10mm;
+  }
+  body.impression-liste {
+    page: liste;
+  }
+  body.impression-liste .champ,
+  body.impression-liste .barre-filtres,
+  body.impression-liste .imprimer-liste,
+  body.impression-liste .col-agglo {
+    display: none !important;
+  }
+  body.impression-liste .titre-impression {
+    display: flex !important;
+  }
+  body.impression-liste .tableau-panneau {
+    height: auto !important;
+    display: block !important;
+  }
+  body.impression-liste .tableau-defilant {
+    overflow: visible !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    border: none !important;
+    flex: none !important;
+  }
+  body.impression-liste .tableau {
+    width: 100%;
+    font-size: 10px;
+  }
+  /* l'en-tête se répète en haut de chaque page */
+  body.impression-liste .tableau thead {
+    display: table-header-group;
+  }
+  body.impression-liste .tableau tr {
+    break-inside: avoid;
+  }
+  body.impression-liste .tableau .marque-nature,
+  body.impression-liste .tableau .marque-seveso {
+    color: #000;
+  }
 }
 
 /* ---------------------------------------------------------------- */
@@ -2510,4 +2559,29 @@ td.liaison small {
 
 .fiche .recap-vol .total td {
   font-weight: 700;
+}
+
+/* En-tête de la liste imprimée : masqué à l'écran, affiché sur le papier */
+.titre-impression {
+  display: none;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.titre-impression span {
+  font-size: 11px;
+  color: var(--texte-doux);
+}
+
+/* Avancement d'ensemble, mis en avant dans la synthèse de l'onglet Lignes */
+.synthese .part-visitee span {
+  color: #15803d;
+}
+
+button.imprimer-liste {
+  align-self: flex-start;
+  margin-bottom: 2px;
 }

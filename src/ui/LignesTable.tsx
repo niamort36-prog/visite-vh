@@ -15,7 +15,7 @@ import { NATURES } from '../lib/vols';
 import BarreFiltres from './BarreFiltres';
 import { dateCourte, km } from '../lib/geo';
 
-type Colonne = 'nom' | 'tension' | 'km' | 'perimetre' | 'faits' | 'restants' | 'pourcent' | 'date';
+type Colonne = 'nom' | 'tension' | 'km' | 'faits' | 'restants' | 'pourcent' | 'date';
 
 interface Props {
   onOuvrir: (l: Ligne) => void;
@@ -66,8 +66,6 @@ export default function LignesTable({ onOuvrir }: Props) {
             return sens * (x.l.tension - y.l.tension);
           case 'km':
             return sens * (x.l.km - y.l.km);
-          case 'perimetre':
-            return sens * (x.a.kmPerimetre - y.a.kmPerimetre);
           case 'faits':
             return sens * (x.a.kmFaits - y.a.kmFaits);
           case 'restants':
@@ -102,8 +100,30 @@ export default function LignesTable({ onOuvrir }: Props) {
       t.restants += a.kmRestants;
       if (s.visites.VH.statut === 'fait') t.terminees++;
     }
-    return t;
+    // avancement d'ensemble du secteur affiché, en kilomètres et non en nombre
+    // de lignes : une 400 kV de 80 km ne pèse pas comme une antenne de 3 km
+    return { ...t, pourcent: t.perimetre > 0 ? (t.faits / t.perimetre) * 100 : 0 };
   }, [rangees]);
+
+  /**
+   * Impression de la seule liste, en A3 paysage : la classe posée sur le corps
+   * bascule la feuille d'impression, et le navigateur la retire de lui-même une
+   * fois la boîte de dialogue refermée.
+   */
+  /** Secteur retenu, en clair, pour l'en-tête de la liste imprimée. */
+  const perimetreSecteur =
+    secteur.eel.join(', ') || secteur.gmr.join(', ') || secteur.cm || '';
+
+  const imprimer = () => {
+    const corps = document.body;
+    corps.classList.add('impression-liste');
+    const fin = () => {
+      corps.classList.remove('impression-liste');
+      window.removeEventListener('afterprint', fin);
+    };
+    window.addEventListener('afterprint', fin);
+    window.print();
+  };
 
   const entete = (col: Colonne, libelle: string, titre?: string) => (
     <th
@@ -136,7 +156,24 @@ export default function LignesTable({ onOuvrir }: Props) {
 
       <BarreFiltres masquees={lignes.length - lignesAffichees.length} />
 
+      <button className="imprimer-liste" onClick={imprimer}>
+        Imprimer la liste (A3 paysage)
+      </button>
+
+      {/* en-tête réservé au papier : la liste imprimée doit se suffire à elle-même */}
+      <div className="titre-impression">
+        <b>Ouvrages à visiter</b>
+        {perimetreSecteur && <> — {perimetreSecteur}</>}
+        <span>
+          {totaux.lignes} ouvrage{totaux.lignes > 1 ? 's' : ''} · édité le{' '}
+          {new Date().toLocaleDateString('fr-FR')}
+        </span>
+      </div>
+
       <div className="synthese">
+        <div className="part-visitee" title="Kilomètres survolés rapportés au périmètre à visiter">
+          <span>{Math.round(totaux.pourcent)} %</span> visités
+        </div>
         <div>
           <span>{totaux.lignes}</span> lignes
         </div>
@@ -167,7 +204,6 @@ export default function LignesTable({ onOuvrir }: Props) {
               </th>
               {entete('tension', 'kV')}
               {entete('km', 'Long.', 'Longueur totale de la ligne')}
-              {entete('perimetre', 'Périm.', 'Longueur entre les pylônes frontières')}
               {entete('faits', 'Faits', 'Kilomètres survolés en visite héliportée')}
               {entete('restants', 'Reste', 'Kilomètres restant à survoler en visite héliportée')}
               {entete('pourcent', '%')}
@@ -296,7 +332,6 @@ export default function LignesTable({ onOuvrir }: Props) {
                 </td>
                 <td className="num">{l.tension}</td>
                 <td className="num">{l.km.toFixed(1).replace('.', ',')}</td>
-                <td className="num">{a.kmPerimetre.toFixed(1).replace('.', ',')}</td>
                 <td className="num ok">{a.kmFaits.toFixed(1).replace('.', ',')}</td>
                 <td className="num reste">{a.kmRestants.toFixed(1).replace('.', ',')}</td>
                 <td className="num">
