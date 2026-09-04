@@ -122,6 +122,7 @@ export default function PrepasPanel({ onOuvrir }: { onOuvrir: (id: string) => vo
                     <span>{libelleDuree(b.min)}</span>
                   </>
                 )}
+                {p.validee && <span className="immat validee">validée</span>}
                 {p.immatriculation && <span className="immat">{p.immatriculation}</span>}
               </div>
             </button>

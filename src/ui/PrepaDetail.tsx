@@ -12,10 +12,11 @@ import {
 } from '../lib/vols';
 import { calculerJournee, etapesDemiJournee } from '../lib/trajets';
 import { joursDeSemaine, libelleJour, libelleJourCourt, libelleSemaine } from '../lib/semaines';
-import { km as fmtKm } from '../lib/geo';
+import { dateCourte, km as fmtKm } from '../lib/geo';
 import NotamJournee from './NotamJournee';
 import { SevesoBadge, SevesoDetail } from './SevesoCellule';
 import ListeTaches from './ListeTaches';
+import FichePrepa from './FichePrepa';
 import { useTaches } from '../state/useTaches';
 
 const DEMIS: { cle: DemiJournee; nom: string }[] = [
@@ -60,7 +61,7 @@ export default function PrepaDetail({
   } = useStore();
 
   /** Le dossier d'une préparation se lit par volets, pour ne pas tout empiler. */
-  const [volet, setVolet] = useState<'planning' | 'echeances'>('planning');
+  const [volet, setVolet] = useState<'planning' | 'echeances' | 'fiche'>('planning');
 
   // échéances propres à cette préparation, partagées avec la fenêtre des échéances
   const toutesTaches = useTaches();
@@ -211,9 +212,52 @@ export default function PrepaDetail({
           Échéances
           {tachesOuvertes > 0 && <span className="badge">{tachesOuvertes}</span>}
         </button>
+        <button className={volet === 'fiche' ? 'actif' : ''} onClick={() => setVolet('fiche')}>
+          Fiche
+        </button>
       </nav>
 
-      {volet === 'echeances' ? (
+      <div className="ligne-boutons validation">
+        {prepa.validee ? (
+          <>
+            <span className="etiquette-validee">
+              Validée le {dateCourte(prepa.validee.le)}
+              {prepa.validee.par ? ` par ${prepa.validee.par}` : ''}
+            </span>
+            <button onClick={() => majPreparation(prepa.id, { validee: undefined })}>
+              Reprendre la préparation
+            </button>
+          </>
+        ) : (
+          <button
+            className="principal"
+            onClick={() =>
+              majPreparation(prepa.id, {
+                validee: { le: new Date().toISOString(), par: prepa.oan || undefined },
+              })
+            }
+            title="Fige la préparation et donne accès à la fiche imprimable"
+          >
+            Valider la semaine
+          </button>
+        )}
+        <button
+          onClick={() =>
+            window.open(
+              `${window.location.pathname}#fiche=${prepa.id}`,
+              `fiche-${prepa.id}`,
+              'width=1000,height=900',
+            )
+          }
+          title="Ouvrir la fiche dans une fenêtre séparée, pour l'imprimer"
+        >
+          Ouvrir la fiche ↗
+        </button>
+      </div>
+
+      {volet === 'fiche' ? (
+        <FichePrepa prepa={prepa} />
+      ) : volet === 'echeances' ? (
         <>
           {tachesPrepa.length === 0 ? (
             <p className="aide">Aucune échéance pour cette semaine.</p>

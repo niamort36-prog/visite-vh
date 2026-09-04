@@ -213,6 +213,28 @@ export interface ZoneDePoser {
   note?: string;
 }
 
+/**
+ * Renseignements de la fiche de préparation, ceux qui ne se déduisent pas du
+ * planning : interlocuteurs prévenus, autorisation STH, visas.
+ */
+export interface FichePreparation {
+  redacteur?: string;
+  valideur?: string;
+  /** groupements de postes informés, et leur contact */
+  groupementPostes?: string;
+  telPostes?: string;
+  dateInfoPostes?: string;
+  /** groupements de gendarmerie informés */
+  gendarmeries?: string;
+  telGendarmerie?: string;
+  dateInfoGendarmerie?: string;
+  /** autorisation spécifique de survol */
+  sthNature?: string;
+  sthOrganisme?: string;
+  sthDate?: string;
+  observations?: string;
+}
+
 /** Une ligne du planning : un ouvrage à survoler dans une demi-journée. */
 export interface VolLigne {
   id: string;
@@ -224,6 +246,8 @@ export interface VolLigne {
   km: number;
   /** durée saisie à la main ; sinon elle découle des km et de la vitesse */
   dureeMin?: number;
+  /** colonne IFL de la fiche de préparation */
+  ifl?: boolean;
   /**
    * Extrémité par laquelle commence la visite : « AB » part du pylône frontière
    * de début, « BA » de celui de fin. Détermine les trajets de liaison.
@@ -252,6 +276,10 @@ export interface Preparation {
   vitesseTransit?: number;
   /** zone de poser d'où part et où revient l'appareil */
   dzId?: string;
+  /** renseignements de la fiche imprimable */
+  fiche?: FichePreparation;
+  /** validation : la préparation est figée et prête à être éditée en fiche */
+  validee?: { le: string; par?: string };
   oan?: string;
   pilote?: string;
   immatriculation?: string;

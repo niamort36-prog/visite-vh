@@ -454,10 +454,31 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [rattachements, setRattachements] = useState<Map<string, RattachementLigne>>(new Map());
   const compteur = useRef(0);
 
+  /**
+   * La fiche imprimable s'ouvre dans une seconde fenêtre, sur le même stockage.
+   * Sans cette écoute, la dernière fenêtre à écrire écraserait le travail de
+   * l'autre : chacune se recale sur ce que l'autre vient d'enregistrer.
+   */
+  const ecritureLocale = useRef(false);
+  useEffect(() => {
+    const surStockage = (e: StorageEvent) => {
+      if (e.key !== CLE || !e.newValue || ecritureLocale.current) return;
+      try {
+        setEtat(JSON.parse(e.newValue) as Persiste);
+      } catch {
+        /* valeur illisible : on garde l'état courant */
+      }
+    };
+    window.addEventListener('storage', surStockage);
+    return () => window.removeEventListener('storage', surStockage);
+  }, []);
+
   // persistance
   useEffect(() => {
     try {
+      ecritureLocale.current = true;
       localStorage.setItem(CLE, JSON.stringify(etat));
+      ecritureLocale.current = false;
     } catch {
       setErreur("Le suivi n'a pas pu être enregistré (stockage plein ?). Exportez vos données.");
     }

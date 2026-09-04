@@ -76,6 +76,13 @@ compte, et reste utilisable **hors connexion** une fois le secteur chargé.
   de poser pour le premier vol, la fin de l'ouvrage précédent ensuite — à **200 km/h par
   défaut**, vitesse modifiable. Ces liaisons s'ajoutent au temps de visite, retour à la zone
   de poser compris, pour donner la durée réelle de la journée.
+- **Fiche de préparation imprimable** : une fois la semaine composée, on la **valide**, ce qui
+  donne accès à une fiche au format d'usage — page de garde reprenant la nature de la mission,
+  les interlocuteurs informés (chargés d'exploitation, gendarmerie), l'autorisation STH, les
+  observations et les visas, puis **une page par demi-journée** avec le programme des lignes
+  (nom de l'ouvrage, kV, km, points particuliers, IFL) et le total. Elle s'ouvre dans le
+  dossier de préparation ou **dans une fenêtre séparée**, se remplit à la main pour les
+  commentaires et s'imprime en A4, une page par feuille. Reprendre la préparation la déverrouille.
 - **Échéances** : une fenêtre récapitule les démarches à effectuer, avec leur date limite,
   déduites du secteur et des préparations. Les retards apparaissent en rouge, les échéances
   sous quinze jours en orange, et le bouton de l'en-tête porte le nombre de tâches ouvertes.
@@ -234,7 +241,8 @@ src/lib/taches.ts          échéances de campagne déduites du secteur et des p
 src/lib/trajets.ts         enchaînement d'une journée : liaisons, sens de visite, retour DZ
 src/state/useTaches.ts     calcul partagé des échéances (en-tête, fenêtre, préparation)
 src/ui/                    panneaux secteur, tableau des lignes, détail d'ouvrage,
-                           préparations de vol et planning par demi-journée
+                           préparations de vol, planning par demi-journée et
+                           fiche de préparation imprimable
 ```
 
 ## Licences

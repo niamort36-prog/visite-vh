@@ -2033,3 +2033,240 @@ td.liaison small {
 .bandeau-dz {
   background: #0f766e;
 }
+
+/* ---------------------------------------------------------------- */
+/* Fiche de préparation, calquée sur le formulaire d'usage           */
+/* ---------------------------------------------------------------- */
+
+.fenetre-fiche {
+  background: #e9edf3;
+  overflow: auto;
+  display: block;
+}
+
+.fiche {
+  background: #e9edf3;
+  padding: 10px;
+  font-size: 12px;
+  color: #000;
+}
+.fiche-outils {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.fiche-outils button {
+  padding: 5px 12px;
+  border: 1px solid var(--bord);
+  background: #fff;
+  border-radius: var(--rayon);
+  cursor: pointer;
+}
+.fiche-outils button.principal {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.fiche .page {
+  background: #fff;
+  border: 1px solid var(--bord);
+  padding: 14px 18px;
+  margin: 0 auto 12px;
+  max-width: 780px;
+}
+.fiche h1 {
+  margin: 0;
+  font-size: 15px;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.fiche h2 {
+  margin: 14px 0 4px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.fiche-semaine,
+.fiche-jour {
+  text-align: center;
+  font-size: 11px;
+  color: #444;
+  margin-bottom: 6px;
+}
+.fiche-jour {
+  font-weight: 700;
+  color: #000;
+}
+.fiche-entete-jour {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.fiche-entete-jour h1 {
+  flex: 1;
+}
+.fiche-entete-jour .demis {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.fiche .cadre {
+  width: 100%;
+  border-collapse: collapse;
+}
+.fiche .cadre th,
+.fiche .cadre td {
+  border: 1px solid #333;
+  padding: 3px 5px;
+  vertical-align: middle;
+  font-weight: 400;
+  text-align: left;
+}
+.fiche .cadre th {
+  background: #eef2f7;
+  font-weight: 700;
+  font-size: 11px;
+}
+.fiche .cadre .c {
+  text-align: center;
+}
+.fiche .cadre input[type='text'],
+.fiche .cadre input:not([type]) {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 1px 2px;
+  font: inherit;
+}
+.fiche .cadre input:focus {
+  outline: 1px solid var(--accent);
+  background: #f7fbff;
+}
+.fiche .case {
+  display: inline-block;
+  min-width: 16px;
+  height: 14px;
+  border: 1px solid #333;
+  font-weight: 700;
+  line-height: 13px;
+  text-align: center;
+}
+.fiche .nature td:first-child {
+  width: 38%;
+}
+.fiche .programme td:first-child {
+  width: 34%;
+}
+.fiche .programme th:nth-child(2),
+.fiche .programme th:nth-child(3),
+.fiche .programme th:nth-child(5) {
+  width: 42px;
+}
+.fiche .programme .total td {
+  font-weight: 700;
+  background: #eef2f7;
+}
+.fiche .visas td {
+  height: 44px;
+  vertical-align: top;
+}
+.fiche .visa-date td {
+  height: auto;
+  font-size: 11px;
+}
+.fiche .observations {
+  width: 100%;
+  border: 1px solid #333;
+  padding: 4px 6px;
+  font: inherit;
+  resize: vertical;
+}
+.fiche .mention {
+  margin: 5px 0 0;
+  font-size: 10px;
+  font-style: italic;
+  color: #333;
+}
+.fiche-pied {
+  max-width: 780px;
+  margin: 0 auto;
+  text-align: right;
+  font-size: 11px;
+  color: #444;
+}
+
+.validation {
+  align-items: center;
+}
+.etiquette-validee {
+  font-size: 11px;
+  font-weight: 700;
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+  border-radius: 10px;
+  padding: 2px 9px;
+}
+.immat.validee {
+  background: #dcfce7;
+  color: #166534;
+}
+
+/* ---- impression : une page A4 par section ---------------------- */
+@media print {
+  body {
+    background: #fff;
+  }
+  .entete,
+  .onglets,
+  .volets,
+  .validation,
+  .zone-carte,
+  .poignee,
+  .fiche-outils,
+  .bandeau-erreur {
+    display: none !important;
+  }
+  .appli,
+  .corps,
+  .panneau-lateral,
+  .panneau-contenu {
+    display: block !important;
+    width: auto !important;
+    height: auto !important;
+    overflow: visible !important;
+    border: none !important;
+  }
+  .fiche,
+  .fenetre-fiche {
+    background: #fff;
+    padding: 0;
+  }
+  .fiche .page {
+    border: none;
+    padding: 0;
+    max-width: none;
+    page-break-after: always;
+    break-after: page;
+  }
+  .fiche .page:last-of-type {
+    page-break-after: auto;
+    break-after: auto;
+  }
+  .fiche .cadre input:focus {
+    outline: none;
+  }
+  .fiche-pied {
+    display: none;
+  }
+  @page {
+    size: A4 portrait;
+    margin: 12mm;
+  }
+}

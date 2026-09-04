@@ -7,6 +7,7 @@ import CampagneBarre from './ui/CampagneBarre';
 import PrepasPanel from './ui/PrepasPanel';
 import PrepaDetail from './ui/PrepaDetail';
 import TachesFenetre from './ui/TachesFenetre';
+import FichePrepa from './ui/FichePrepa';
 import { useTaches } from './state/useTaches';
 import { joursAvant } from './lib/semaines';
 import { nomAffiche, useStore } from './state/store';
@@ -23,6 +24,12 @@ interface Selection {
   prepaId: string;
   jour: string;
   demi: DemiJournee;
+}
+
+/** Identifiant de préparation demandé dans l'URL, pour la fenêtre de fiche. */
+function ficheDemandee(): string | null {
+  const m = window.location.hash.match(/fiche=([^&]+)/);
+  return m ? decodeURIComponent(m[1]) : null;
 }
 
 export default function App() {
@@ -95,6 +102,10 @@ export default function App() {
   }, []);
   const prepa = preparations.find((p) => p.id === prepaOuverte) ?? null;
 
+  // fenêtre dédiée à la fiche : l'application n'affiche qu'elle
+  const [idFiche] = useState(ficheDemandee);
+  const prepaFiche = idFiche ? preparations.find((p) => p.id === idFiche) : null;
+
   // ouvrages déjà planifiés dans la préparation ouverte, surlignés sur la carte
   const lignesPrepa = useMemo(() => {
     const s = new Set<string>();
@@ -131,6 +142,18 @@ export default function App() {
   const onPyloneClic = useCallback((l: Ligne, p: Pylone) => {
     setActionPylone({ ligne: l, pylone: p });
   }, []);
+
+  if (idFiche) {
+    return (
+      <div className="appli fenetre-fiche">
+        {prepaFiche ? (
+          <FichePrepa prepa={prepaFiche} onFermer={() => window.close()} />
+        ) : (
+          <p className="vide">Préparation introuvable dans cette campagne.</p>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className={`appli${panneauOuvert ? '' : ' replie'}`}>
