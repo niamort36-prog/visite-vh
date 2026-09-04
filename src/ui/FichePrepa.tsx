@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import type { DemiJournee, FichePreparation, Preparation } from '../types';
 import { etatAgglo, nomAffiche, useStore } from '../state/store';
 import { calculerJournee, clotureDemiJournee } from '../lib/trajets';
+import { libelleDuree } from '../lib/vols';
 import { km as fmtKm } from '../lib/geo';
 import { libelleJour, libelleSemaine } from '../lib/semaines';
 import { natureDuTypeVol, nomTypeVol } from '../lib/vols';
@@ -45,6 +46,36 @@ export default function FichePrepa({
   const nature = natureDuTypeVol(prepa.typeVol);
   const dz = zonesDePoser.find((z) => z.id === prepa.dzId);
 
+  /**
+   * Temps de vol théorique : visite des ouvrages, liaisons entre eux, plein de
+   * fin de vacation et retour à la zone de poser. C'est une estimation de
+   * préparation, pas un temps de vol réglementaire.
+   */
+  const journees = useMemo(() => {
+    const m = new Map<string, ReturnType<typeof calculerJournee>>();
+    for (const j of jours)
+      m.set(j, calculerJournee(prepa, prepa.creneaux[j], dz, parId, suivi, pointsCarburant));
+    return m;
+  }, [jours, prepa, dz, parId, suivi, pointsCarburant]);
+
+  /** Temps de vol théorique d'une demi-journée : visite, liaisons et clôture. */
+  const volDemiJournee = (jour: string, demi: DemiJournee) => {
+    const jc = journees.get(jour);
+    if (!jc) return 0;
+    const cl = clotureDemiJournee(jc, demi);
+    return (
+      jc.etapes
+        .filter((e) => e.demi === demi)
+        .reduce((a, e) => a + e.visiteMin + e.transitMin, 0) +
+      (cl ? cl.ravitaillementMin + cl.retourMin : 0)
+    );
+  };
+
+  const volTotal = useMemo(
+    () => [...journees.values()].reduce((a, j) => a + j.totalMin, 0),
+    [journees],
+  );
+
   const majFiche = (patch: Partial<FichePreparation>) =>
     majPreparation(prepa.id, { fiche: { ...fiche, ...patch } });
 
@@ -86,7 +117,7 @@ export default function FichePrepa({
       </div>
 
       {/* ---------------------------------------------------- page de garde */}
-      <section className="page">
+      <section className="page page-garde">
         <h1>PRÉPARATION DE TRAVAIL DE LA VISITE HÉLIPORTÉE N° {numero}</h1>
         <div className="fiche-semaine">{libelleSemaine(prepa.annee, prepa.semaine)}</div>
 
@@ -233,6 +264,49 @@ export default function FichePrepa({
           </p>
         )}
 
+        <h2>Temps de vol théorique :</h2>
+        <table className="cadre recap-vol">
+          <tbody>
+            {jours.map((jour) => (
+              <tr key={jour}>
+                <td>{libelleJour(jour)}</td>
+                <td className="c">
+                  {fmtKm(
+                    DEMIS.reduce(
+                      (a, d) =>
+                        a + (prepa.creneaux[jour]?.[d.cle] ?? []).reduce((b, v) => b + v.km, 0),
+                      0,
+                    ),
+                  )}
+                </td>
+                <td className="c">{libelleDuree(journees.get(jour)?.totalMin ?? 0)}</td>
+              </tr>
+            ))}
+            <tr className="total">
+              <td>Total de la semaine</td>
+              <td className="c">
+                {fmtKm(
+                  jours.reduce(
+                    (a, j) =>
+                      a +
+                      DEMIS.reduce(
+                        (b, d) =>
+                          b + (prepa.creneaux[j]?.[d.cle] ?? []).reduce((c, v) => c + v.km, 0),
+                        0,
+                      ),
+                    0,
+                  ),
+                )}
+              </td>
+              <td className="c">{libelleDuree(volTotal)}</td>
+            </tr>
+          </tbody>
+        </table>
+        <p className="mention">
+          Visite des ouvrages, liaisons, ravitaillement de fin de vacation et retour à la zone
+          de poser compris. Estimation de préparation.
+        </p>
+
         <h2>Observations diverses :</h2>
         <textarea
           className="cadre observations"
@@ -308,7 +382,7 @@ export default function FichePrepa({
             d.cle,
           );
           return (
-            <section className="page" key={`${jour}-${d.cle}`}>
+            <section className="page page-planning" key={`${jour}-${d.cle}`}>
               <div className="fiche-entete-jour">
                 <h1>VISITE HÉLIPORTÉE N° {numero}</h1>
                 <div className="demis">
@@ -368,7 +442,9 @@ export default function FichePrepa({
                     <td />
                     <td />
                     <td className="c">{total.toFixed(1).replace('.', ',')}</td>
-                    <td colSpan={2} />
+                    <td colSpan={2}>
+                      Temps de vol théorique : {libelleDuree(volDemiJournee(jour, d.cle))}
+                    </td>
                   </tr>
                 </tbody>
               </table>

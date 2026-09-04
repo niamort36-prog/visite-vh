@@ -2281,9 +2281,33 @@ td.liaison small {
   .fiche-pied {
     display: none;
   }
+  /*
+   * La page de garde s'imprime en portrait comme le formulaire d'origine, les
+   * plannings en paysage : le tableau des ouvrages y tient sans repli. Les
+   * pages nommées demandent un navigateur récent ; à défaut, tout sort en
+   * portrait, ce que fait la règle générale ci-dessous.
+   */
   @page {
     size: A4 portrait;
     margin: 12mm;
+  }
+  @page garde {
+    size: A4 portrait;
+    margin: 12mm;
+  }
+  @page planning {
+    size: A4 landscape;
+    margin: 10mm 12mm;
+  }
+  .fiche .page-garde {
+    page: garde;
+  }
+  .fiche .page-planning {
+    page: planning;
+  }
+  /* en paysage le tableau dispose de toute la largeur utile */
+  .fiche .page-planning table {
+    width: 100%;
   }
 }
 
@@ -2465,4 +2489,25 @@ td.liaison small {
   background: #f0f9ff;
   color: #075985;
   border: 1px solid #bae6fd;
+}
+
+/* Récapitulatif du temps de vol théorique, sur la page de garde de la fiche */
+.fiche .recap-vol {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.fiche .recap-vol td {
+  border: 1px solid #000;
+  padding: 2px 6px;
+}
+
+.fiche .recap-vol .c {
+  text-align: center;
+  width: 28%;
+}
+
+.fiche .recap-vol .total td {
+  font-weight: 700;
 }
