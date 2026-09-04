@@ -54,6 +54,12 @@ export interface Poste {
   tension: number;
   operateur: string;
   fonction?: string;
+  /**
+   * Famille du poste : RTE, mixte pour un poste source raccordé en HTB mais
+   * exploité par un distributeur, autre pour les autres clients du réseau de
+   * transport (traction ferroviaire, production, industrie).
+   */
+  cat?: 'rte' | 'mixte' | 'autre';
   lat: number;
   lon: number;
 }

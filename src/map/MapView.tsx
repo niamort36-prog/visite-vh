@@ -317,16 +317,22 @@ export default function MapView({
     if (zoom < 8 || !filtres.postes) return;
     for (const p of postes) {
       if (bornes && !bornes.contains([p.lat, p.lon])) continue;
+      // les clients du réseau — traction, production, industrie — restent masqués
+      // tant qu'on ne les demande pas
+      if (p.cat === 'autre' && !filtres.postesAutres) continue;
+      const couleurPoste =
+        p.cat === 'mixte' ? '#7c3aed' : p.cat === 'autre' ? '#64748b' : '#0b2545';
       const m = L.circleMarker([p.lat, p.lon], {
         radius: zoom >= 12 ? 7 : 4,
         color: '#0b2545',
         weight: 2,
-        fillColor: p.operateur === 'RTE' ? '#0b2545' : '#7c3aed',
+        fillColor: couleurPoste,
         fillOpacity: 0.9,
       });
       m.bindTooltip(
         `<b>${p.nom || 'Poste'}</b>${p.code ? ` <code>${p.code}</code>` : ''}<br>` +
-          `${p.operateur}${p.fonction ? ` · ${p.fonction}` : ''}`,
+          `${p.operateur}${p.cat === 'mixte' ? ' · poste source (mixte)' : ''}` +
+          `${p.fonction ? ` · ${p.fonction}` : ''}`,
         { direction: 'top' },
       );
       m.addTo(g);
@@ -341,7 +347,7 @@ export default function MapView({
         }).addTo(g);
       }
     }
-  }, [postes, zoom, bornes, filtres.postes]);
+  }, [postes, zoom, bornes, filtres.postes, filtres.postesAutres]);
 
   /* ---- pylônes ---------------------------------------------------- */
   const pylonesVisibles = useMemo(() => {

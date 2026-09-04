@@ -64,6 +64,8 @@ interface Persiste {
   depts: string[];
   /** secteur de travail, exprimé en centres de maintenance et GMR */
   secteur: Secteur;
+  /** marque la bascule vers le secteur restreint au référentiel */
+  secteurRestreint?: boolean;
   suivis: Record<string, SuiviLigne[]>;
   /** notes de ligne, communes à toutes les campagnes */
   notes: Record<string, string>;
@@ -105,7 +107,13 @@ export interface Secteur {
   inclureNonRattaches: boolean;
 }
 
-const SECTEUR_VIDE: Secteur = { cm: '', gmr: [], eel: [], inclureNonRattaches: true };
+/*
+ * Une fois le référentiel importé, il fait autorité : les ouvrages qu'il ne
+ * rattache pas au secteur retenu — réseaux voisins captés par l'emprise
+ * départementale — sortent de la liste et de la carte. La case du panneau
+ * Secteur permet de les faire revenir.
+ */
+const SECTEUR_VIDE: Secteur = { cm: '', gmr: [], eel: [], inclureNonRattaches: false };
 
 /**
  * Filtres d'affichage. Ils valent pour la liste comme pour la carte : masquer un
@@ -128,6 +136,8 @@ export interface FiltresAffichage {
   aIdentifierSeules: boolean;
   /** afficher les postes sur la carte */
   postes: boolean;
+  /** afficher aussi les postes des autres exploitants (traction, production, industrie) */
+  postesAutres: boolean;
 }
 
 export const FILTRES_VIDES: FiltresAffichage = {
@@ -138,6 +148,7 @@ export const FILTRES_VIDES: FiltresAffichage = {
   sevesoSeules: false,
   aIdentifierSeules: false,
   postes: true,
+  postesAutres: false,
 };
 
 /** Un filtre est-il actif, hors affichage des postes ? */
@@ -271,8 +282,13 @@ function lire(): Persiste {
       if (p.campagnes?.length)
         return {
           ...p,
-          // un secteur enregistré avant l'ajout des équipes n'a pas le champ eel
-          secteur: { ...SECTEUR_VIDE, ...(p.secteur ?? {}) },
+          // un secteur enregistré avant l'ajout des équipes n'a pas le champ eel ;
+          // et le référentiel restreint désormais le secteur par défaut, ce qui
+          // se réapplique une fois aux états enregistrés auparavant
+          secteur: p.secteurRestreint
+            ? { ...SECTEUR_VIDE, ...(p.secteur ?? {}) }
+            : { ...SECTEUR_VIDE, ...(p.secteur ?? {}), inclureNonRattaches: false },
+          secteurRestreint: true,
           notes: p.notes ?? extraireNotes(p.suivis),
           observations: migrerObservations(p.observations),
           suivis: migrerSuivis(p.suivis),
@@ -294,6 +310,7 @@ function lire(): Persiste {
     campagneCourante: c.id,
     depts: [],
     secteur: SECTEUR_VIDE,
+    secteurRestreint: true,
     suivis: { [c.id]: [] },
     notes: {},
     observations: [],
@@ -555,6 +572,29 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       return !cm || r.cm === cm;
     });
   }, [lignesChargees, rattachements, etat.secteur, referentiel]);
+
+  /**
+   * Postes du secteur. Les jeux départementaux couvrent bien plus que le GMR
+   * retenu ; on ne garde donc que les postes posés sur un ouvrage du secteur,
+   * ce qui revient à ses extrémités et aux postes qu'il traverse.
+   */
+  const postesSecteur = useMemo(() => {
+    if (lignes.length === lignesChargees.length) return postes;
+    // grille au demi-degré sur les tracés retenus, puis test de proximité
+    const PAS = 0.02; // ≈ 2 km, l'ordre de grandeur d'un poste et de ses abords
+    const grille = new Set<string>();
+    for (const l of lignes)
+      for (const [lat, lon] of l.geom)
+        grille.add(`${Math.floor(lat / PAS)}:${Math.floor(lon / PAS)}`);
+    return postes.filter((p) => {
+      const gy = Math.floor(p.lat / PAS);
+      const gx = Math.floor(p.lon / PAS);
+      // les huit cases voisines, un poste n'étant jamais exactement sur le tracé
+      for (let dy = -1; dy <= 1; dy++)
+        for (let dx = -1; dx <= 1; dx++) if (grille.has(`${gy + dy}:${gx + dx}`)) return true;
+      return false;
+    });
+  }, [postes, lignes, lignesChargees]);
 
   const suivisCampagne = etat.suivis[etat.campagneCourante] ?? [];
 
@@ -1148,7 +1188,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     zonesDisponibles,
     lignes,
     lignesAffichees,
-    postes,
+    postes: postesSecteur,
     filtres,
     setFiltres,
     referentiel,

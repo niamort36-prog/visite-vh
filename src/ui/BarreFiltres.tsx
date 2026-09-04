@@ -117,10 +117,18 @@ export default function BarreFiltres({ masquees }: { masquees: number }) {
         <span className="separateur-filtres" />
         <button
           className={filtres.postes ? 'puce active' : 'puce'}
-          title="Afficher les postes sur la carte"
+          title="Afficher les postes RTE et les postes sources sur la carte"
           onClick={() => setFiltres({ ...filtres, postes: !filtres.postes })}
         >
           Postes
+        </button>
+        <button
+          className={filtres.postesAutres ? 'puce active' : 'puce'}
+          disabled={!filtres.postes}
+          title="Afficher aussi les postes des autres exploitants : traction ferroviaire, production, industrie"
+          onClick={() => setFiltres({ ...filtres, postesAutres: !filtres.postesAutres })}
+        >
+          Autres exploitants
         </button>
       </div>
 

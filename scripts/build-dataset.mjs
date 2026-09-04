@@ -62,6 +62,10 @@ function palier(v) {
   return 0;
 }
 
+/** Gestionnaires de réseau de distribution : Enedis et les entreprises locales. */
+const DISTRIBUTEURS =
+  /enedis|erdf|electricite reseau|reseaux? de distribution|regie|sicae|reseda|geredis|synelva|vialis|sorea|greenalp|gegrenoble|esseyssel|rethones|strasbourg electricite|srd\b|ser\b|electricite de mayotte/;
+
 function normOperateur(tags = {}) {
   // le tag `operator` d'OSM est libre : « RTE », « R.T.E. », « Électricité de France »…
   const op = String(tags.operator || '')
@@ -719,12 +723,39 @@ function main() {
   let postes = extrairePostes(osm);
   console.log(`→ ${postes.length} postes OSM bruts`);
 
-  // On garde les postes HTB : tension ≥ 63 kV, ou nom apparié à un site RTE.
+  /*
+   * On garde les postes du réseau de transport. Un nom apparié à un site RTE ne
+   * suffit pas : beaucoup de postes de distribution portent le nom du lieu-dit
+   * qui a donné son nom au poste RTE voisin, et se retrouvaient à tort dans la
+   * liste. Le nom ne rattrape donc que les postes dont la tension est inconnue.
+   */
   postes = postes.filter((p) => {
-    if (palier(p.tension) >= MIN_KV) return true;
-    if (p.nom && odre.parNomPoste.has(cle(p.nom))) return true;
-    return false;
+    const kv = palier(p.tension);
+    if (kv >= MIN_KV) return true;
+    if (p.tension > 0) return false;
+    return Boolean(p.nom && odre.parNomPoste.has(cle(p.nom)));
   });
+
+  /*
+   * Trois familles : les postes du réseau de transport, les postes sources —
+   * exploités par un distributeur mais raccordés en HTB, donc mixtes — et les
+   * autres clients du réseau (traction ferroviaire, production, industrie).
+   *
+   * Un poste de transport n'est pas toujours exploité par RTE : en Corse et
+   * outre-mer, c'est EDF SEI qui tient le réseau HTB. La fonction OSM
+   * `transmission` prime donc sur l'exploitant.
+   */
+  for (const p of postes) {
+    const fonction = String(p.fonction || '').toLowerCase();
+    const distributeur =
+      DISTRIBUTEURS.test(cle(p.operateur).toLowerCase()) ||
+      (fonction.includes('distribution') && p.operateur !== 'RTE');
+    if (p.operateur === 'RTE') p.cat = 'rte';
+    else if (distributeur) p.cat = 'mixte';
+    else if (fonction === 'transmission') p.cat = 'rte';
+    else if (p.nom && odre.parNomPoste.has(cle(p.nom))) p.cat = 'rte';
+    else p.cat = 'autre';
+  }
 
   for (const p of postes) {
     const off = p.nom ? odre.parNomPoste.get(cle(p.nom)) : null;
@@ -737,7 +768,12 @@ function main() {
     }
     p.dept = departementDe(p.lat, p.lon, depts);
   }
-  console.log(`  ✓ ${postes.length} postes HTB retenus`);
+  const parCat = postes.reduce((a, p) => ({ ...a, [p.cat]: (a[p.cat] || 0) + 1 }), {});
+  console.log(
+    `  ✓ ${postes.length} postes HTB retenus — ` +
+      `${parCat.rte || 0} RTE, ${parCat.mixte || 0} mixtes (postes sources), ` +
+      `${parCat.autre || 0} autres exploitants`,
+  );
 
   // index spatial grossier des postes, pour nommer les extrémités de ligne
   const grille = new Map();

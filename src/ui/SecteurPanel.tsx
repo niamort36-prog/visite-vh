@@ -254,7 +254,10 @@ export default function SecteurPanel({ placementDz, onPlacerDz, onAnnulerDz }: P
               checked={secteur.inclureNonRattaches}
               onChange={(e) => setSecteur({ ...secteur, inclureNonRattaches: e.target.checked })}
             />
-            <span>Afficher aussi les ouvrages que le référentiel ne rattache à aucun GMR</span>
+            <span>
+              Afficher aussi les ouvrages que le référentiel ne rattache à aucun GMR —
+              réseaux voisins captés par l&apos;emprise départementale
+            </span>
           </label>
 
           {!secteur.cm && !secteur.gmr.length && !secteur.eel.length && (
