@@ -252,44 +252,56 @@ export default function MapView({
       trace.addTo(g);
 
       /*
-       * Ouvrage partagé avec l'équipe voisine : sa section est estompée et un
-       * repère marque la frontière, là où notre visite s'arrête.
+       * Hors périmètre : section de l'équipe voisine, et extrémités que le
+       * référentiel ne décrit pas. On les estompe plutôt que de les masquer —
+       * savoir que la ligne continue aide à se repérer en vol — et un repère
+       * marque le pylône frontière, là où la visite s'arrête.
        */
-      if (partage) {
-        for (const sec of rat!.sections) {
-          if (sectionDansSecteur(sec, secteur)) continue;
-          const pts = points({ debut: sec.du, fin: sec.au });
-          if (pts.length < 2) continue;
-          L.polyline(pts, {
-            color: '#ffffff',
-            weight: epaisseur(l.tension) + 1,
-            opacity: 0.7,
-          }).addTo(g);
-          L.polyline(pts, {
-            color: couleur(l.tension),
-            weight: epaisseur(l.tension),
-            opacity: 0.5,
-            dashArray: '3 5',
-          }).addTo(g);
-        }
-        for (let k = 1; k < rat!.sections.length; k++) {
-          const py = l.pylones.find((x) => x.i === rat!.sections[k].du);
-          if (!py) continue;
-          L.circleMarker([py.lat, py.lon], {
-            radius: 5,
-            color: '#b45309',
-            weight: 2,
-            fillColor: '#fde68a',
-            fillOpacity: 1,
-          })
-            .bindTooltip(
-              `<b>Frontière d'équipe</b><br>pylône ${py.num}<br>` +
-                `${rat!.sections[k - 1].eel || rat!.sections[k - 1].gmr} | ` +
-                `${rat!.sections[k].eel || rat!.sections[k].gmr}`,
-              { direction: 'top' },
-            )
-            .addTo(g);
-        }
+      const estomper = (debut: number, fin: number) => {
+        const pts = points({ debut, fin });
+        if (pts.length < 2) return;
+        L.polyline(pts, {
+          color: '#ffffff',
+          weight: epaisseur(l.tension) + 1,
+          opacity: 0.7,
+        }).addTo(g);
+        L.polyline(pts, {
+          color: couleur(l.tension),
+          weight: epaisseur(l.tension),
+          opacity: 0.45,
+          dashArray: '3 5',
+        }).addTo(g);
+      };
+      const rangs = l.pylones.map((x) => x.i);
+      const premier = rangs[0] ?? 1;
+      const dernier = rangs[rangs.length - 1] ?? 1;
+      const av = calculerAvancement(l, s);
+      if (av.debut > premier) estomper(premier, av.debut);
+      if (av.fin < dernier) estomper(av.fin, dernier);
+      if (partage)
+        for (const sec of rat!.sections)
+          if (!sectionDansSecteur(sec, secteur)) estomper(sec.du, sec.au);
+
+      for (const borne of [av.debut, av.fin]) {
+        if (borne === premier && av.fin === dernier) continue;
+        const py = l.pylones.find((x) => x.i === borne);
+        if (!py) continue;
+        const voisine = rat?.sections.find(
+          (sec) => !sectionDansSecteur(sec, secteur) && Math.abs(sec.du - borne) <= 1,
+        );
+        L.circleMarker([py.lat, py.lon], {
+          radius: 5,
+          color: '#b45309',
+          weight: 2,
+          fillColor: '#fde68a',
+          fillOpacity: 1,
+        })
+          .bindTooltip(
+            `<b>Pylône frontière</b><br>pylône ${py.num}` +
+              (voisine ? `<br>au-delà : ${voisine.eel || voisine.gmr}` : ''),
+            { direction: 'top' },
+          )
+          .addTo(g);
       }
 
       if (horsPerimetre) continue;

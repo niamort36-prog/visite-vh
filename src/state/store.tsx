@@ -357,6 +357,10 @@ interface Ctx {
   /** rattachement des tracés chargés aux ouvrages du référentiel */
   rattachements: Map<string, RattachementLigne>;
   rattachement: (ligneId: string) => RattachementLigne | undefined;
+  /** pylônes frontières déduits du référentiel pour le secteur retenu */
+  bornesSecteur: (ligneId: string) => { debut: number; fin: number } | undefined;
+  /** suivi tel qu'enregistré, sans les frontières déduites */
+  suiviBrut: (ligneId: string) => SuiviLigne;
   bilanRte: BilanAppariement | null;
 
   campagnes: Campagne[];
@@ -657,10 +661,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const zonesDisponibles = useMemo(() => {
     const gmrParCm: Record<string, Set<string>> = {};
     const eelParGmr: Record<string, Set<string>> = {};
-    for (const l of Object.values(referentiel?.liaisons ?? {})) {
-      if (!l.gmr) continue;
-      (gmrParCm[l.cm || '—'] ??= new Set()).add(l.gmr);
-      if (l.eel) (eelParGmr[l.gmr] ??= new Set()).add(l.eel);
+    // le rattachement est porté par le pylône : une liaison partagée figure
+    // dans les deux équipes, et les deux doivent être proposées
+    for (const z of referentiel?.zones ?? Object.values(referentiel?.liaisons ?? {})) {
+      if (!z.gmr) continue;
+      (gmrParCm[z.cm || '—'] ??= new Set()).add(z.gmr);
+      if (z.eel) (eelParGmr[z.gmr] ??= new Set()).add(z.eel);
     }
     const trier = (o: Record<string, Set<string>>) =>
       Object.fromEntries(Object.entries(o).map(([k, v]) => [k, [...v].sort()]));
@@ -711,9 +717,46 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
 
-  const suivi = useCallback(
+  /**
+   * Pylônes frontières déduits du référentiel : le périmètre à visiter s'arrête
+   * aux pylônes que le fichier rattache au secteur. Ce que le référentiel ne
+   * décrit pas — début de tracé non couvert, section de l'équipe voisine — ne
+   * relève pas de l'équipe et sort du périmètre.
+   */
+  const bornesSecteur = useCallback(
+    (ligneId: string): { debut: number; fin: number } | undefined => {
+      const r = rattachements.get(ligneId);
+      if (!r) return undefined;
+      const notres = r.sections.filter((sec) => sectionDansSecteur(sec, etat.secteur));
+      if (!notres.length) return undefined;
+      return {
+        debut: Math.min(...notres.map((sec) => sec.du)),
+        fin: Math.max(...notres.map((sec) => sec.au)),
+      };
+    },
+    [rattachements, etat.secteur],
+  );
+
+  /**
+   * Suivi d'un ouvrage. Les pylônes frontières saisis par l'exploitant priment ;
+   * à défaut, ceux que déduit le référentiel s'appliquent, sans être enregistrés
+   * — changer de secteur doit les recalculer, pas les figer.
+   */
+  /** Suivi tel qu'enregistré, sans les frontières déduites du référentiel. */
+  const suiviBrut = useCallback(
     (ligneId: string): SuiviLigne => parLigne.get(ligneId) ?? suiviVide(ligneId),
     [parLigne],
+  );
+
+  const suivi = useCallback(
+    (ligneId: string): SuiviLigne => {
+      const base = parLigne.get(ligneId) ?? suiviVide(ligneId);
+      if (base.debut !== undefined && base.fin !== undefined) return base;
+      const b = bornesSecteur(ligneId);
+      if (!b) return base;
+      return { ...base, debut: base.debut ?? b.debut, fin: base.fin ?? b.fin };
+    },
+    [parLigne, bornesSecteur],
   );
 
   const majSuivi = useCallback((ligneId: string, patch: Partial<SuiviLigne>) => {
@@ -1195,6 +1238,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     lignes,
     lignesAffichees,
     postes: postesSecteur,
+    bornesSecteur,
+    suiviBrut,
     filtres,
     setFiltres,
     referentiel,

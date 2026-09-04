@@ -50,6 +50,13 @@ export default function ReferentielPanel() {
             {referentiel.source} — importé le {dateCourte(referentiel.importeLe)}
           </div>
 
+          {!referentiel.zones && (
+            <p className="avis">
+              Cet import ne retient qu&apos;une équipe par ouvrage. Réimportez le fichier
+              pour que la frontière soit placée au pylône où change l&apos;équipe.
+            </p>
+          )}
+
           {bilanRte ? (
             <p className="aide">
               Sur le secteur chargé : <b>{bilanRte.lignes}</b> tracés rattachés,{' '}

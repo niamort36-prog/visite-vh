@@ -2442,3 +2442,15 @@ td.liaison small {
   margin-left: auto;
   font-size: 11px;
 }
+
+/* Avis d'un import à refaire : visible sans être alarmant */
+.avis {
+  margin: 6px 0 0;
+  padding: 6px 9px;
+  border-radius: 7px;
+  font-size: 12px;
+  line-height: 1.45;
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+}

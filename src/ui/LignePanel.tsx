@@ -33,6 +33,8 @@ export default function LignePanel({ ligne, onCadrerPylone }: Props) {
     setAggloManuel,
     rattachement,
     secteur,
+    bornesSecteur,
+    suiviBrut,
     majVisite,
     note,
     setNote,
@@ -205,10 +207,41 @@ export default function LignePanel({ ligne, onCadrerPylone }: Props) {
       </div>
 
       <div className="bloc-titre">Pylônes frontières</div>
-      <p className="aide">
-        Bornes du tronçon dont vous avez la charge. Cliquez un pylône sur la carte pour le définir
-        rapidement.
-      </p>
+      {(() => {
+        const auto = bornesSecteur(ligne.id);
+        const brut = suiviBrut(ligne.id);
+        const manuel = brut.debut !== undefined || brut.fin !== undefined;
+        const num = (rang: number) => ligne.pylones.find((p) => p.i === rang)?.num ?? rang;
+        if (!auto)
+          return (
+            <p className="aide">
+              Bornes du tronçon dont vous avez la charge. Cliquez un pylône sur la carte pour
+              le définir rapidement.
+            </p>
+          );
+        return (
+          <p className="aide">
+            Le référentiel place la frontière de votre équipe aux pylônes{' '}
+            <b>
+              {num(auto.debut)} → {num(auto.fin)}
+            </b>
+            {manuel ? (
+              <>
+                {' '}
+                ; vos bornes saisies priment.{' '}
+                <button
+                  className="lien"
+                  onClick={() => majSuivi(ligne.id, { debut: undefined, fin: undefined })}
+                >
+                  revenir à la frontière du référentiel
+                </button>
+              </>
+            ) : (
+              <> ; corrigez-les ci-dessous si la coupure tombe ailleurs.</>
+            )}
+          </p>
+        );
+      })()}
       <div className="grille2">
         <label>
           Début
